@@ -26,7 +26,7 @@ export const yinYang: Template = {
       name: 'Top dot',
       hint: 'The small eye inside the upper lobe',
       d: 'M6.898 3.5a.899.899 0 1 0-1.797 0 .899.899 0 0 0 1.797 0',
-      defaultFill: '#e8e6e1',
+      defaultFill: '#141416',
       z: 2,
     },
     {
@@ -34,7 +34,7 @@ export const yinYang: Template = {
       name: 'Bottom dot',
       hint: 'The small eye inside the lower lobe',
       d: 'M6.898 8.5a.899.899 0 1 0-1.797 0 .899.899 0 0 0 1.797 0',
-      defaultFill: '#141416',
+      defaultFill: '#e8e6e1',
       z: 3,
     },
   ],
