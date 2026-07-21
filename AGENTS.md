@@ -134,6 +134,7 @@ Drop the file in `public/fonts/` and add an entry to `BUILTIN_FONTS` in `src/lib
 | `src/App.tsx` | Layout shell, skip link, mounts Stage/Inspector/Toasts, installs keyboard hook |
 | `src/index.css` | Tailwind v4 theme tokens and the `.btn` / `.label` / `.num` / `.panel` / `.checkerboard` classes |
 | `src/types.ts` | The whole data model: `Region`, `Template`, `Fill`, `Asset`, `Composition`, `TextSpec`, `FontAsset`, `MaskLabFile`, `BLEND_MODES` |
+| `src/opentype-js.d.ts` | Ambient declarations for opentype.js v2 — the package ships no types and the DefinitelyTyped package describes the 1.x API. Must stay a standalone `.d.ts`: a `declare module` inside a file that has its own imports is treated as module *augmentation*, not an ambient declaration, and would not satisfy the import. |
 | `src/store.ts` | Zustand state, 30-step undo, the gesture/history contract, toasts, dev-only `window.__masklab` |
 | `src/hooks/useKeyboard.ts` | Global shortcuts; inert while a form control has focus |
 | `src/lib/geometry.ts` | `fillTransform()` (the placement contract), `shapeBounds()`, `ringGeometry()`, `pointToViewBox()`, `deltaToViewBox()` |
@@ -189,25 +190,17 @@ The high-value checks are the ones that measure pixels rather than read code: re
 
 ## Known sharp edges
 
-Verified by measurement against the running app, not inferred from reading. Each is live at the time of writing — check before assuming it is still true.
+Verified by measurement against the running app, not inferred from reading. Check before assuming any of it is still true.
 
-### The SVG grain clip path is referenced but never defined
+### Three defects that were found here and have since been fixed
 
-In `lib/svgExport.ts`, the `defs` array is serialised into the output at the `<defs>` line, but the shape clip path for the grain overlay is pushed onto `defs` *after* that, inside the later `if (composition.grain > 0)` block. The push has no effect on the already-built string.
+Left recorded because the reasoning is reusable, and because each was found by measuring the running app rather than reading the source.
 
-With `transparentBackground: true` and `grain > 0`, the emitted document contains `clip-path="url(#masklab-shape)"` and **no** `<clipPath id="masklab-shape">`. Confirmed on a probe composition: reference present, definition absent. An unresolvable `clip-path` reference is not portable across renderers — treat the grain on transparent SVG exports as unreliable until the `defs` push is moved above the serialisation.
+**The SVG grain clip path was referenced but never defined.** `defs` was serialised into the document before the grain block appended the shape clip path to it, so a `transparentBackground` + `grain > 0` export carried `clip-path="url(#masklab-shape)"` with no matching definition. Fixed by reserving the `<defs>` slot and splicing it in after the body is built, so anything appended while building still lands. If you add another `defs` entry from inside the body-building code, this is why it works.
 
-### `shapeBounds()` caches by `template.id`, which is not unique over time
+**`shapeBounds()` cached by `template.id`, which is not unique over time.** Generated templates reuse a constant id — every text template is `'text'`, every uploaded SVG is `'custom'` — so retyping returned the previous run's bounds, visible as a ring sized for the old words. Fixed by keying the cache on the template *object* in a `WeakMap`. Templates are immutable, so identity is the correct key. Do not "optimise" this back to an id.
 
-`geometry.ts` memoises the measured bounding box in a module-level `Map` keyed on `template.id`. But generated templates reuse a **constant** id: every text template is `'text'` and every uploaded SVG is `'custom'`. Retyping the words or loading a different SVG produces new geometry under the same key, so the cache returns the previous shape's bounds.
-
-Confirmed: two templates sharing an id with `10 × 10` and `90 × 90` geometry both report `10 × 10`. `ringGeometry()` is the consumer, so the visible symptom is a ring sized and positioned for the *previous* text — only when `ringWidth > 0`, which is why it is easy to miss. Any fix needs a cache key that changes with the geometry, or no cache for generated templates.
-
-### JSON round-trip loses the editable text run
-
-`exportJson()` writes `textSpec` (and an uploaded font) into the file, and `store.loadFile()` reads `file.textSpec` and `file.fonts`. But `importJson()` builds its return value from only `format`, `version`, `composition`, `assets`, and `customTemplate` — it never copies `textSpec` or `fonts` across, so both arrive as `undefined`.
-
-Confirmed by importing a document that contains both: neither survives. The practical effect is that reopening a saved text look restores the artwork and the fills (the glyph geometry rides along in `customTemplate`) but **not** the re-editable run — the Text panel falls back to "This template came from text, but the run that made it was not saved with it", even though the run is sitting in the file on disk.
+**The JSON round trip lost the editable text run.** `exportJson()` wrote `textSpec` and any uploaded font, and `store.loadFile()` read them, but `importJson()` never copied them onto its return value. Fixed, with validation and a human message for each. The general lesson: a writer, a reader and a validator in three files is exactly the shape that loses a field silently — when you add one to `MaskLabFile`, change all three.
 
 ### Smaller things
 

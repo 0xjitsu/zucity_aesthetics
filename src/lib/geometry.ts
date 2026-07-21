@@ -106,7 +106,14 @@ export interface Ring {
   r: number;
 }
 
-const bboxCache = new Map<string, ViewBox>();
+/**
+ * Keyed on the template *object*, not its id: 'text' and 'custom' are reused
+ * for every rebuild, so an id-keyed cache hands a retyped run the bounds of
+ * the words before it — visible as a mis-sized ring. Templates are immutable,
+ * so identity is the correct key, and a WeakMap lets discarded ones be
+ * collected.
+ */
+const bboxCache = new WeakMap<Template, ViewBox>();
 
 /**
  * Union bounding box of every region, measured with the browser's own path
@@ -116,7 +123,7 @@ const bboxCache = new Map<string, ViewBox>();
  * ring hug it instead.
  */
 export function shapeBounds(template: Template): ViewBox {
-  const cached = bboxCache.get(template.id);
+  const cached = bboxCache.get(template);
   if (cached) return cached;
 
   const vb = viewBoxOf(template);
@@ -147,7 +154,7 @@ export function shapeBounds(template: Template): ViewBox {
     // Non-DOM contexts fall back to the viewBox, which is never wrong, only loose.
   }
 
-  bboxCache.set(template.id, box);
+  bboxCache.set(template, box);
   return box;
 }
 

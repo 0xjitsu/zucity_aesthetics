@@ -161,5 +161,22 @@ export async function importJson(file: File): Promise<MaskLabFile> {
     assets: assets as unknown as Asset[],
   };
   if (customTemplate !== undefined) out.customTemplate = customTemplate as unknown as Template;
+
+  // A text document is only re-editable if the run that generated it survives
+  // the round trip, and an uploaded font only if its bytes do.
+  const textSpec = parsed.textSpec;
+  if (textSpec !== undefined) {
+    if (!isRecord(textSpec) || typeof textSpec.text !== 'string') {
+      throw new Error(`The text saved in ${label} is damaged, so it cannot be opened.`);
+    }
+    out.textSpec = textSpec as unknown as TextSpec;
+  }
+  const fonts = parsed.fonts;
+  if (fonts !== undefined) {
+    if (!Array.isArray(fonts) || fonts.some((x) => !isRecord(x) || typeof x.id !== 'string')) {
+      throw new Error(`The fonts saved in ${label} are damaged, so it cannot be opened.`);
+    }
+    out.fonts = fonts as unknown as FontAsset[];
+  }
   return out;
 }

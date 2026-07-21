@@ -104,7 +104,7 @@ export function buildSvg(input: ExportInput): string {
       ` viewBox="${num(vb.x)} ${num(vb.y)} ${num(vb.w)} ${num(vb.h)}">`,
   );
   lines.push(`  <title>${esc(template.name)}</title>`);
-  lines.push(`  <defs>\n${indent(defs, '    ')}\n  </defs>`);
+  const defsAt = lines.length;
   if (!composition.transparentBackground) {
     // The output is square but the viewBox need not be (text templates are
     // tall). The plate spans what the image actually covers, not the artwork.
@@ -132,6 +132,7 @@ export function buildSvg(input: ExportInput): string {
       ),
     );
   }
+  lines.splice(defsAt, 0, `  <defs>\n${indent(defs, '    ')}\n  </defs>`);
   lines.push('</svg>');
 
   return lines.join('\n') + '\n';

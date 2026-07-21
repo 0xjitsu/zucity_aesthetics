@@ -134,22 +134,7 @@ So: same scale, same strength, different pixels. **Grain is the single element t
 
 There is a second-order consequence worth knowing. An `overlay` blend still paints where nothing is beneath it, so on a transparent-background export the grain would haze the empty corners — a "transparent" PNG came out with alpha in the background. Both renderers now correct for this, and they do it differently: the canvas snapshots the alpha before the grain lands and masks it back afterwards with `destination-in`; the SVG clips its grain overlay to the region paths. Same intent, different mechanism, because the two media offer different tools.
 
-#### 2. Non-square viewBoxes are framed differently
-
-This one is a defect rather than a design decision, and it is live.
-
-`renderComposition()` scales by `size / vb.w` on both axes into a square canvas and translates by `-vb.x, -vb.y`, anchoring content **top-left**. `buildSvg()` emits `width="edge" height="edge"` with the template's viewBox and no `preserveAspectRatio`, so the SVG default of `xMidYMid meet` **centres** it.
-
-Measured on a pinned `[0, 0, 200, 50]` template rasterised at 800 × 800 — the scale agrees exactly, the placement does not:
-
-| Output | Ink bounding box |
-|---|---|
-| Canvas / PNG | `y 0 → 199` (top-anchored) |
-| SVG export | `y 300 → 499` (centred) |
-
-All four built-in templates use a square `[0, 0, 12, 12]` viewBox and are unaffected. **Text templates are affected by default** — the text viewBox is the tight ink box plus an 8% em margin, so a single line of horizontal text is a wide, short box. Uploaded SVGs with non-square artboards are affected too, and a tall box is worse than a wide one: the canvas crops whatever falls below the square while the SVG shrinks to fit.
-
-Until this is reconciled, a non-square template's PNG and SVG are not interchangeable, and the PNG is the one that matches the editor.
+The SVG exporter reserves its `<defs>` slot and fills it after the body is built, so a clip path added while building the body still reaches the document. That ordering was wrong once, and the symptom was a transparent-background grain export referencing `url(#masklab-shape)` without defining it.
 
 ---
 
@@ -214,7 +199,7 @@ The SVG exporter has two details worth noting. Region ids come from user-supplie
 
 `exportJson` embeds only assets actually referenced by a fill, and only *uploaded* fonts — built-in faces ship with the app, so re-embedding a 2.3 MB face in every saved look would be waste.
 
-**Known gap:** `importJson()` does not read `textSpec` or `fonts` back out of the file, though `exportJson()` writes them and the store is ready to consume them. Reopening a saved text look therefore restores the artwork and its fills — the glyph geometry travels in `customTemplate` — but not the re-editable text run.
+`importJson()` reads `textSpec` and `fonts` back out and validates them, so reopening a saved text look restores the artwork, its fills, and the re-editable run. A writer, a reader and a validator living in three files is the shape that loses a field silently — adding one to `MaskLabFile` means changing all three.
 
 ---
 
