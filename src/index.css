@@ -1,0 +1,224 @@
+@import 'tailwindcss';
+
+/* --------------------------------------------------------------------------
+   MaskLab — darkroom
+   Dark ground, one hot accent (safelight red), generous whitespace.
+   The canvas is the hero; controls recede until touched.
+   -------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-ground: #08080a;
+  --color-panel: #0e0e11;
+  --color-raise: #141419;
+  --color-line: #1f1f26;
+  --color-line-soft: #17171d;
+  --color-ink: #ecebe7;
+  --color-muted: #8b8b95;
+  --color-faint: #5a5a65;
+  --color-accent: #ff3b14;
+  --color-accent-dim: #b62a0e;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Micro-labels: the recede-until-touched voice of the whole UI. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+
+.panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+}
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: var(--color-raise);
+  border: 1px solid var(--color-line);
+  padding: 0 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  color: var(--color-ink);
+  border-color: #33333d;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-accent {
+  color: var(--color-ground);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.btn-accent:hover:not(:disabled) {
+  color: var(--color-ground);
+  background: #ff5330;
+  border-color: #ff5330;
+}
+
+/* Checkerboard under the stage, so transparency reads honestly. */
+.checkerboard {
+  background-color: #121215;
+  background-image:
+    linear-gradient(45deg, #191920 25%, transparent 25%),
+    linear-gradient(-45deg, #191920 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #191920 75%),
+    linear-gradient(-45deg, transparent 75%, #191920 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+}
+
+/* Range inputs: thin rail, square accent thumb. No rounded-everything. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--color-line);
+}
+
+input[type='range']::-moz-range-track {
+  height: 1px;
+  background: var(--color-line);
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 3px;
+  height: 14px;
+  margin-top: -7px;
+  background: var(--color-accent);
+  border: 0;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 3px;
+  height: 14px;
+  border-radius: 0;
+  background: var(--color-accent);
+  border: 0;
+}
+
+input[type='color'] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid var(--color-line);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: 0;
+}
+
+select,
+input[type='number'],
+input[type='text'] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink);
+  background: var(--color-raise);
+  border: 1px solid var(--color-line);
+  padding: 6px 8px;
+}
+
+/* Scrollbars, both engines. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a33 transparent;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #2a2a33;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
