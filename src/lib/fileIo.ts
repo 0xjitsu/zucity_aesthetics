@@ -1,4 +1,11 @@
-import type { Asset, Composition, MaskLabFile, Template } from '../types';
+import type {
+  Asset,
+  Composition,
+  FontAsset,
+  MaskLabFile,
+  Template,
+  TextSpec,
+} from '../types';
 import { TEMPLATES } from '../templates';
 import type { ExportInput } from './pngExport';
 
@@ -37,8 +44,14 @@ export function downloadBlob(blob: Blob, filename: string): void {
  * images. A user-uploaded SVG template ships alongside for the same reason —
  * without it the composition would point at a template that does not exist.
  */
-export function exportJson(input: ExportInput & { customTemplate?: Template | null }): void {
-  const { template, composition, assets, customTemplate } = input;
+export function exportJson(
+  input: ExportInput & {
+    customTemplate?: Template | null;
+    textSpec?: TextSpec | null;
+    fonts?: Record<string, FontAsset>;
+  },
+): void {
+  const { template, composition, assets, customTemplate, textSpec, fonts } = input;
 
   const used = new Set<string>();
   for (const fill of Object.values(composition.fills)) {
@@ -59,6 +72,16 @@ export function exportJson(input: ExportInput & { customTemplate?: Template | nu
         ? undefined
         : template;
   if (custom) file.customTemplate = custom;
+
+  // A text composition is only reproducible if the run that generated it comes
+  // along, and an uploaded font is only reproducible if its bytes do. Built-in
+  // fonts are omitted — they ship with the app, so re-embedding a 2.3 MB face
+  // in every saved look would be waste.
+  if (textSpec) {
+    file.textSpec = textSpec;
+    const used = fonts?.[textSpec.fontId];
+    if (used && used.source === 'uploaded') file.fonts = [used];
+  }
 
   const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
   downloadBlob(blob, `masklab-${composition.templateId}.json`);

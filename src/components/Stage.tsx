@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { currentTemplate, useStore } from '../store';
 import { sortedRegions } from '../templates';
-import { deltaToViewBox, pointToViewBox, viewBoxOf } from '../lib/geometry';
+import { deltaToViewBox, fitToSquare, pointToViewBox, viewBoxOf } from '../lib/geometry';
 import { useImages } from '../lib/imageCache';
 import { renderComposition } from '../lib/render';
 import { filesFromClipboard, filesFromDataTransfer, ingestFiles } from '../lib/ingest';
@@ -69,9 +69,10 @@ export function Stage() {
 
   const paintOutlines = (ctx: CanvasRenderingContext2D, px: number) => {
     if (!hoveredId && !selectedId) return;
-    const s = px / vb.w;
+    const fit = fitToSquare(vb, px);
     ctx.save();
-    ctx.scale(s, s);
+    ctx.translate(fit.dx, fit.dy);
+    ctx.scale(fit.scale, fit.scale);
     ctx.translate(-vb.x, -vb.y);
     if (composition.globalRotation) {
       const cx = vb.x + vb.w / 2;
@@ -84,7 +85,7 @@ export function Stage() {
       const isSelected = region.id === selectedId;
       const isHovered = region.id === hoveredId;
       if (!isSelected && !isHovered) continue;
-      ctx.lineWidth = (isSelected ? 2 : 1) / s;
+      ctx.lineWidth = (isSelected ? 2 : 1) / fit.scale;
       ctx.strokeStyle = isSelected ? '#ff3b14' : 'rgba(236,235,231,0.5)';
       ctx.stroke(path);
     }

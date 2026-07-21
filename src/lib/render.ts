@@ -1,6 +1,6 @@
 import type { Asset, Composition, Template } from '../types';
 import { sortedRegions } from '../templates';
-import { fillTransform, ringGeometry, viewBoxOf } from './geometry';
+import { fillTransform, fitToSquare, outputSquare, ringGeometry, viewBoxOf } from './geometry';
 
 const DEG = Math.PI / 180;
 
@@ -25,7 +25,7 @@ export interface RenderInput {
 export function renderComposition(ctx: CanvasRenderingContext2D, input: RenderInput): void {
   const { template, composition, assets, images, size, forExport } = input;
   const vb = viewBoxOf(template);
-  const s = size / vb.w;
+  const fit = fitToSquare(vb, size);
 
   ctx.save();
   ctx.clearRect(0, 0, size, size);
@@ -36,7 +36,8 @@ export function renderComposition(ctx: CanvasRenderingContext2D, input: RenderIn
     ctx.fillRect(0, 0, size, size);
   }
 
-  ctx.scale(s, s);
+  ctx.translate(fit.dx, fit.dy);
+  ctx.scale(fit.scale, fit.scale);
   ctx.translate(-vb.x, -vb.y);
 
   const cx = vb.x + vb.w / 2;
@@ -66,8 +67,9 @@ export function renderComposition(ctx: CanvasRenderingContext2D, input: RenderIn
       ctx.scale(t.flipX, t.flipY);
       ctx.drawImage(image, -t.dw / 2, -t.dh / 2, t.dw, t.dh);
     } else {
+      const square = outputSquare(vb);
       ctx.fillStyle = fill.color;
-      ctx.fillRect(vb.x, vb.y, vb.w, vb.h);
+      ctx.fillRect(square.x, square.y, square.w, square.h);
     }
 
     ctx.restore();

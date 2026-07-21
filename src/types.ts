@@ -54,6 +54,46 @@ export interface Asset {
   downscaledFrom?: [number, number];
 }
 
+/* -------------------------------------------------------------------------- */
+/* Text as a template                                                          */
+/* -------------------------------------------------------------------------- */
+
+export interface FontAsset {
+  id: string;
+  name: string;
+  /** Built-ins are fetched from /fonts; uploads carry their own bytes. */
+  source: 'builtin' | 'uploaded';
+  /** Built-in only. */
+  url?: string;
+  /** Upload only — base64, so a JSON document stays self-contained. */
+  dataUrl?: string;
+  /** Rough hint for the UI; built-ins declare what they cover. */
+  coverage?: string;
+}
+
+/**
+ * How a run of text is cut into regions.
+ * - `glyph`: every character is its own fillable region (the general case)
+ * - `line`:  every line is one region
+ * - `all`:   the whole run is a single region
+ */
+export type TextSplit = 'glyph' | 'line' | 'all';
+
+export interface TextSpec {
+  text: string;
+  fontId: string;
+  /** Em size, in viewBox units. */
+  fontSize: number;
+  /** Extra tracking between glyphs, in viewBox units. */
+  letterSpacing: number;
+  /** Multiplier on the em size. */
+  lineHeight: number;
+  /** Vertical is the CJK setting: glyphs stack downward, columns run right to left. */
+  direction: 'horizontal' | 'vertical';
+  align: 'start' | 'center' | 'end';
+  split: TextSplit;
+}
+
 export interface Composition {
   templateId: string;
   fills: Record<RegionId, Fill>;
@@ -77,8 +117,12 @@ export interface MaskLabFile {
   version: 1;
   composition: Composition;
   assets: Asset[];
-  /** Present only for templates that are not in the built-in registry (custom SVG). */
+  /** Present for templates outside the built-in registry (custom SVG, or text). */
   customTemplate?: Template;
+  /** Present when the template was generated from text, so it stays re-editable. */
+  textSpec?: TextSpec;
+  /** Uploaded fonts referenced by `textSpec`, carried so the file is portable. */
+  fonts?: FontAsset[];
 }
 
 export const BLEND_MODES: BlendMode[] = [

@@ -58,6 +58,48 @@ export function fillTransform(fill: Fill, asset: Asset, vb: ViewBox): FillTransf
   };
 }
 
+export interface Fit {
+  /** Uniform scale from viewBox units to output pixels. */
+  scale: number;
+  /** Letterbox offset, in output pixels. */
+  dx: number;
+  dy: number;
+}
+
+/**
+ * Fit a viewBox into the square output, centred — the same contract as SVG's
+ * default `preserveAspectRatio="xMidYMid meet"`.
+ *
+ * The four built-in shapes all have square viewBoxes, so for a long time the
+ * canvas got away with scaling by width alone. Text templates are the first
+ * non-square case: a vertical Japanese run is roughly 113 x 602, and scaling
+ * that by width alone renders the top sixth of it at six times the intended
+ * size. Both renderers now derive their mapping from here.
+ */
+export function fitToSquare(vb: ViewBox, size: number): Fit {
+  const scale = Math.min(size / vb.w, size / vb.h);
+  return {
+    scale,
+    dx: (size - vb.w * scale) / 2,
+    dy: (size - vb.h * scale) / 2,
+  };
+}
+
+/**
+ * The square the output covers, expressed in viewBox units. Anything that must
+ * fill the whole exported image rather than just the artwork — the background
+ * plate, the grain overlay — spans this, not the viewBox.
+ */
+export function outputSquare(vb: ViewBox): ViewBox {
+  const side = Math.max(vb.w, vb.h);
+  return {
+    x: vb.x + vb.w / 2 - side / 2,
+    y: vb.y + vb.h / 2 - side / 2,
+    w: side,
+    h: side,
+  };
+}
+
 export interface Ring {
   cx: number;
   cy: number;
@@ -133,9 +175,9 @@ export function pointToViewBox(
   vb: ViewBox,
   globalRotation: number,
 ): [number, number] {
-  const s = size / vb.w;
-  let x = px / s + vb.x;
-  let y = py / s + vb.y;
+  const fit = fitToSquare(vb, size);
+  let x = (px - fit.dx) / fit.scale + vb.x;
+  let y = (py - fit.dy) / fit.scale + vb.y;
   if (globalRotation) {
     const [ox, oy] = centerOf(vb);
     const a = -globalRotation * DEG;
@@ -155,9 +197,9 @@ export function deltaToViewBox(
   vb: ViewBox,
   globalRotation: number,
 ): [number, number] {
-  const s = size / vb.w;
-  let x = dx / s;
-  let y = dy / s;
+  const fit = fitToSquare(vb, size);
+  let x = dx / fit.scale;
+  let y = dy / fit.scale;
   if (globalRotation) {
     const a = -globalRotation * DEG;
     const rx = x * Math.cos(a) - y * Math.sin(a);

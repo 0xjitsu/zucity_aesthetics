@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 import { currentTemplate, useStore } from '../store';
-import { CUSTOM_TEMPLATE_ID, TEMPLATES, sortedRegions } from '../templates';
+import { TEMPLATES, TEXT_TEMPLATE_ID, sortedRegions } from '../templates';
 import { parseSvgToTemplate } from '../lib/svgImport';
+import { BUILTIN_FONTS, buildTextTemplate, defaultTextSpec, loadFont } from '../lib/textTemplate';
 import { Controls } from './Controls';
 import { RegionCard } from './RegionCard';
+import { TextPanel } from './TextPanel';
 import { Toolbar } from './Toolbar';
 
 export function Inspector() {
@@ -12,14 +14,18 @@ export function Inspector() {
   const templateId = useStore((s) => s.composition.templateId);
   const fills = useStore((s) => s.composition.fills);
   const customTemplate = useStore((s) => s.customTemplate);
+  const textSpec = useStore((s) => s.textSpec);
   const setTemplate = useStore((s) => s.setTemplate);
   const setCustomTemplate = useStore((s) => s.setCustomTemplate);
+  const setTextTemplate = useStore((s) => s.setTextTemplate);
   const toast = useStore((s) => s.toast);
 
   const svgRef = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState(false);
+  const [typesetting, setTypesetting] = useState(false);
 
   const regions = sortedRegions(template);
+  const isText = templateId === TEXT_TEMPLATE_ID;
 
   async function onSvgPicked(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -46,6 +52,32 @@ export function Inspector() {
     }
   }
 
+  /* Text already typeset: just switch to it, never throw the words away. */
+  async function onTextClicked() {
+    if (customTemplate && customTemplate.id === TEXT_TEMPLATE_ID && textSpec) {
+      if (!isText) setTemplate(TEXT_TEMPLATE_ID);
+      return;
+    }
+    setTypesetting(true);
+    try {
+      const spec = defaultTextSpec();
+      const font =
+        BUILTIN_FONTS.find((f) => f.id === spec.fontId) ?? BUILTIN_FONTS[0];
+      if (!font) throw new Error('No font is available to typeset with.');
+      const loaded = await loadFont(font);
+      const next = { ...spec, fontId: font.id };
+      setTextTemplate(buildTextTemplate(next, loaded), next);
+    } catch (err) {
+      toast(
+        'error',
+        'Could not start a text template',
+        err instanceof Error ? err.message : String(err),
+      );
+    } finally {
+      setTypesetting(false);
+    }
+  }
+
   return (
     <aside
       aria-label="Inspector"
@@ -66,18 +98,30 @@ export function Inspector() {
           {customTemplate ? (
             <TemplatePill
               label={customTemplate.name || 'Custom'}
-              active={templateId === CUSTOM_TEMPLATE_ID}
-              onClick={() => setTemplate(CUSTOM_TEMPLATE_ID)}
+              active={templateId === customTemplate.id}
+              onClick={() => setTemplate(customTemplate.id)}
             />
           ) : null}
 
           <button
             type="button"
-            className="btn col-span-2 w-full"
+            className="btn w-full min-w-0"
+            disabled={typesetting}
+            aria-pressed={isText}
+            onClick={() => void onTextClicked()}
+          >
+            <span className="truncate">{typesetting ? 'Typesetting…' : 'Text'}</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn w-full min-w-0"
             disabled={reading}
             onClick={() => svgRef.current?.click()}
           >
-            {reading ? 'Reading…' : customTemplate ? 'Replace custom SVG' : 'Custom SVG'}
+            <span className="truncate">
+              {reading ? 'Reading…' : customTemplate ? 'Replace SVG' : 'Custom SVG'}
+            </span>
           </button>
         </nav>
 
@@ -96,6 +140,19 @@ export function Inspector() {
           </p>
         ) : null}
       </Section>
+
+      {isText ? (
+        <Section title="Text" note={textSpec ? `${textSpec.split} split` : 'not typeset'}>
+          {textSpec ? (
+            <TextPanel />
+          ) : (
+            <p className="num leading-snug">
+              This template came from text, but the run that made it was not saved with it. Pick
+              Text again to typeset a fresh one.
+            </p>
+          )}
+        </Section>
+      ) : null}
 
       <Section
         title="Regions"

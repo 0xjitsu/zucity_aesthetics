@@ -20,6 +20,8 @@ export function Toolbar() {
   const composition = useStore((s) => s.composition);
   const assets = useStore((s) => s.assets);
   const customTemplate = useStore((s) => s.customTemplate);
+  const textSpec = useStore((s) => s.textSpec);
+  const fonts = useStore((s) => s.fonts);
   const loadFile = useStore((s) => s.loadFile);
   const resetAll = useStore((s) => s.resetAll);
   const randomize = useStore((s) => s.randomize);
@@ -110,7 +112,7 @@ export function Toolbar() {
           disabled={job !== null}
           onClick={() =>
             void run('json', () => {
-              exportJson({ ...input(), customTemplate });
+              exportJson({ ...input(), customTemplate, textSpec, fonts });
               toast('ok', 'Document written', `${Object.keys(assets).length} assets embedded`);
             })
           }

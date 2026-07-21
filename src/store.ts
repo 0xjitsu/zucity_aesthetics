@@ -1,7 +1,24 @@
 import { create } from 'zustand';
-import type { Asset, BlendMode, Composition, Fill, MaskLabFile, Region, RegionId, Template } from './types';
+import type {
+  Asset,
+  BlendMode,
+  Composition,
+  Fill,
+  FontAsset,
+  MaskLabFile,
+  Region,
+  RegionId,
+  Template,
+  TextSpec,
+} from './types';
 import { BLEND_MODES } from './types';
-import { CUSTOM_TEMPLATE_ID, DEFAULT_TEMPLATE_ID, findTemplate, sortedRegions } from './templates';
+import {
+  CUSTOM_TEMPLATE_ID,
+  DEFAULT_TEMPLATE_ID,
+  TEXT_TEMPLATE_ID,
+  findTemplate,
+  sortedRegions,
+} from './templates';
 
 const HISTORY_LIMIT = 30;
 
@@ -53,13 +70,18 @@ function baseComposition(template: Template): Composition {
 interface Snapshot {
   composition: Composition;
   customTemplate: Template | null;
+  textSpec: TextSpec | null;
 }
 
 export interface MaskLabState {
   composition: Composition;
   assets: Record<string, Asset>;
-  /** A user-uploaded SVG turned into a template. Lives outside the registry. */
+  /** A generated template — uploaded SVG, or text. Lives outside the registry. */
   customTemplate: Template | null;
+  /** Set when `customTemplate` came from text, so the run stays re-editable. */
+  textSpec: TextSpec | null;
+  /** Built-in and uploaded fonts available to the text template. */
+  fonts: Record<string, FontAsset>;
   selectedId: RegionId | null;
   hoveredId: RegionId | null;
   toasts: Toast[];
@@ -72,6 +94,12 @@ export interface MaskLabState {
 
   setTemplate: (id: string) => void;
   setCustomTemplate: (template: Template) => void;
+  /**
+   * Install a template generated from text. Fills are carried over by position,
+   * so editing the words does not throw away the textures already placed.
+   */
+  setTextTemplate: (template: Template, spec: TextSpec) => void;
+  addFont: (font: FontAsset) => void;
 
   addAsset: (asset: Asset) => void;
   assignAsset: (regionId: RegionId, assetId: string) => void;
@@ -88,6 +116,8 @@ export interface MaskLabState {
   hover: (id: RegionId | null) => void;
 
   randomize: () => void;
+  /** Copy one region's fill onto every other region — the "all glyphs alike" move. */
+  applyFillToAll: (regionId: RegionId) => void;
   resetAll: () => void;
   loadFile: (file: MaskLabFile) => void;
 
@@ -107,6 +137,7 @@ export const useStore = create<MaskLabState>((set, get) => {
     return {
       composition: structuredClone(s.composition),
       customTemplate: s.customTemplate ? structuredClone(s.customTemplate) : null,
+      textSpec: s.textSpec ? structuredClone(s.textSpec) : null,
     };
   };
 
@@ -120,6 +151,8 @@ export const useStore = create<MaskLabState>((set, get) => {
     composition: baseComposition(findTemplate(DEFAULT_TEMPLATE_ID)),
     assets: {},
     customTemplate: null,
+    textSpec: null,
+    fonts: {},
     selectedId: null,
     hoveredId: null,
     toasts: [],
@@ -136,10 +169,15 @@ export const useStore = create<MaskLabState>((set, get) => {
           past: s.past.slice(0, -1),
           future: [
             ...s.future,
-            { composition: structuredClone(s.composition), customTemplate: s.customTemplate },
+            {
+              composition: structuredClone(s.composition),
+              customTemplate: s.customTemplate,
+              textSpec: s.textSpec,
+            },
           ],
           composition: prev.composition,
           customTemplate: prev.customTemplate,
+          textSpec: prev.textSpec,
         };
       }),
 
@@ -158,11 +196,39 @@ export const useStore = create<MaskLabState>((set, get) => {
       const t: Template = { ...template, id: CUSTOM_TEMPLATE_ID };
       set((s) => ({
         customTemplate: t,
+        textSpec: null,
         composition: { ...s.composition, templateId: t.id, fills: defaultFills(t) },
         selectedId: null,
         hoveredId: null,
       }));
     },
+
+    setTextTemplate: (template, spec) => {
+      record();
+      const t: Template = { ...template, id: TEXT_TEMPLATE_ID };
+      set((s) => {
+        const previous = sortedRegions(currentTemplate(s));
+        const wasText = s.composition.templateId === TEXT_TEMPLATE_ID;
+        const next = defaultFills(t);
+        // Retyping should keep the look. Region ids change with the text, so
+        // carry fills across by position rather than by id.
+        if (wasText) {
+          sortedRegions(t).forEach((region, i) => {
+            const old = previous[i] ? s.composition.fills[previous[i].id] : undefined;
+            if (old) next[region.id] = { ...old, regionId: region.id };
+          });
+        }
+        return {
+          customTemplate: t,
+          textSpec: spec,
+          composition: { ...s.composition, templateId: t.id, fills: next },
+          selectedId: null,
+          hoveredId: null,
+        };
+      });
+    },
+
+    addFont: (font) => set((s) => ({ fonts: { ...s.fonts, [font.id]: font } })),
 
     addAsset: (asset) => set((s) => ({ assets: { ...s.assets, [asset.id]: asset } })),
 
@@ -267,6 +333,19 @@ export const useStore = create<MaskLabState>((set, get) => {
       });
     },
 
+    applyFillToAll: (regionId) => {
+      record();
+      set((s) => {
+        const source = s.composition.fills[regionId];
+        if (!source) return s;
+        const fills: Record<RegionId, Fill> = {};
+        for (const id of Object.keys(s.composition.fills)) {
+          fills[id] = { ...source, regionId: id };
+        }
+        return { composition: { ...s.composition, fills } };
+      });
+    },
+
     resetAll: () => {
       record();
       set((s) => ({
@@ -280,9 +359,13 @@ export const useStore = create<MaskLabState>((set, get) => {
       record();
       const assets: Record<string, Asset> = {};
       for (const a of file.assets) assets[a.id] = a;
-      set(() => ({
+      const fonts: Record<string, FontAsset> = {};
+      for (const f of file.fonts ?? []) fonts[f.id] = f;
+      set((s) => ({
         assets,
+        fonts: { ...s.fonts, ...fonts },
         customTemplate: file.customTemplate ?? null,
+        textSpec: file.textSpec ?? null,
         composition: file.composition,
         selectedId: null,
         hoveredId: null,

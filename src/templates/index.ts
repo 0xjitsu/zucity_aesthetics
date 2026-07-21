@@ -13,6 +13,9 @@ export const TEMPLATES: Template[] = [yinYang, splitCircle, triskelion, quadrant
 
 export const CUSTOM_TEMPLATE_ID = 'custom';
 
+/** Generated from a run of text; every glyph can be its own fillable region. */
+export const TEXT_TEMPLATE_ID = 'text';
+
 export const DEFAULT_TEMPLATE_ID = yinYang.id;
 
 export function findTemplate(id: string, custom?: Template | null): Template {

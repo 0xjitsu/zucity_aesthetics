@@ -23,6 +23,7 @@ export function RegionCard({ region, fill }: RegionCardProps) {
   const clearFill = useStore((s) => s.clearFill);
   const commitFill = useStore((s) => s.commitFill);
   const updateFill = useStore((s) => s.updateFill);
+  const applyFillToAll = useStore((s) => s.applyFillToAll);
   const toast = useStore((s) => s.toast);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -269,6 +270,22 @@ export function RegionCard({ region, fill }: RegionCardProps) {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* The move that matters for text: six katakana sharing one
+                photograph, instead of six identical trips through this panel. */}
+            <div className="mt-2 border-t border-line-soft pt-4">
+              <button
+                type="button"
+                className="btn w-full"
+                aria-label={`Apply the fill on ${region.name} to every region`}
+                onClick={() => applyFillToAll(region.id)}
+              >
+                <span className="truncate">Apply to every region</span>
+              </button>
+              <p className="num mt-2 leading-snug">
+                Copies this texture and every setting above onto all the other regions.
+              </p>
             </div>
           </div>
         ) : (

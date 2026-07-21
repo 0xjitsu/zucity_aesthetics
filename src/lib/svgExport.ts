@@ -1,7 +1,7 @@
 import type { Asset, BlendMode, Fill } from '../types';
 import { sortedRegions } from '../templates';
 import type { ViewBox } from './geometry';
-import { centerOf, fillTransform, ringGeometry, viewBoxOf } from './geometry';
+import { centerOf, fillTransform, outputSquare, ringGeometry, viewBoxOf } from './geometry';
 import type { ExportInput } from './pngExport';
 import { exportEdge } from './pngExport';
 import { downloadBlob } from './fileIo';
@@ -106,7 +106,9 @@ export function buildSvg(input: ExportInput): string {
   lines.push(`  <title>${esc(template.name)}</title>`);
   lines.push(`  <defs>\n${indent(defs, '    ')}\n  </defs>`);
   if (!composition.transparentBackground) {
-    lines.push(`  ${rect(vb, composition.background)}`);
+    // The output is square but the viewBox need not be (text templates are
+    // tall). The plate spans what the image actually covers, not the artwork.
+    lines.push(`  ${rect(outputSquare(vb), composition.background)}`);
   }
   lines.push(indent([rotated], '  '));
   if (composition.grain > 0) {
@@ -160,7 +162,10 @@ function regionGroup(regionId: string, fill: Fill, asset: Asset | undefined, vb:
 
   if (!asset) {
     // Matches the canvas fallback: a flat plate across the whole viewBox.
-    return `${open}\n  ${rect(vb, fill.color)}\n</g>`;
+    // Matches the canvas, which paints colour fills across the whole output
+    // square; both are clipped to the region, so this only matters when a
+    // region reaches past the viewBox.
+    return `${open}\n  ${rect(outputSquare(vb), fill.color)}\n</g>`;
   }
 
   const t = fillTransform(fill, asset, vb);
@@ -193,11 +198,12 @@ function grainFilter(vb: ViewBox): string {
 }
 
 function grainOverlay(vb: ViewBox, grain: number): string[] {
+  const square = outputSquare(vb);
   return [
     '<!-- Grain is the one element that is NOT pixel-identical to the PNG export:',
     '     the canvas uses a seeded noise tile, SVG uses feTurbulence. Same scale',
     '     and strength, different generator. -->',
-    `<rect x="${num(vb.x)}" y="${num(vb.y)}" width="${num(vb.w)}" height="${num(vb.h)}"` +
+    `<rect x="${num(square.x)}" y="${num(square.y)}" width="${num(square.w)}" height="${num(square.h)}"` +
       ` filter="url(#${GRAIN_FILTER_ID})" opacity="${num((grain / 100) * 0.55)}"` +
       ` style="mix-blend-mode: overlay"/>`,
   ];
