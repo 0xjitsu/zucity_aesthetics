@@ -49,6 +49,7 @@ export function Inspector() {
   return (
     <aside
       aria-label="Inspector"
+      id="inspector"
       className="scroll-thin flex w-full min-w-0 shrink-0 flex-col overflow-x-hidden overflow-y-auto border-t border-line bg-panel lg:h-full lg:min-h-0 lg:w-[360px] lg:border-t-0 lg:border-l"
     >
       <Section title="Template" note={template.name}>

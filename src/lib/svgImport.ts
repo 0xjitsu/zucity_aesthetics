@@ -143,6 +143,31 @@ function collect(parent: Element, matrix: Matrix | null, out: Region[], bounds: 
   }
 }
 
+/**
+ * The analytic bounds computed while lowering a primitive are conservative: a
+ * quadratic is bounded by its control hull rather than its curve, and an arc by
+ * the whole ellipse it rides on rather than the swept portion. We are in a
+ * browser, so measure the emitted path exactly instead. This feeds both the
+ * region hints and — more importantly — the fallback viewBox for SVGs that ship
+ * without one, where a wrong box would misplace every region.
+ */
+function measure(d: string): Box | null {
+  try {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+    document.body.appendChild(svg);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+    const b = path.getBBox();
+    svg.remove();
+    if (!Number.isFinite(b.width) || !Number.isFinite(b.height)) return null;
+    return { minX: b.x, minY: b.y, maxX: b.x + b.width, maxY: b.y + b.height };
+  } catch {
+    return null; // Non-DOM context: the analytic box is loose but never wrong-signed.
+  }
+}
+
 function toRegion(
   el: Element,
   tag: string,
@@ -158,16 +183,18 @@ function toRegion(
   const result = (bakeable ? convertPath(raw, matrix as Matrix) : null) ?? convertPath(raw, IDENTITY);
   if (!result) return null;
 
+  const box: Box = measure(result.d) ?? result;
+
   return {
     region: {
       id: `r${index}`,
       name: regionName(el, index),
-      hint: hintFor(el, tag, result),
+      hint: hintFor(el, tag, result, box),
       d: result.d,
       defaultFill: fillFor(el, index),
       z: index,
     },
-    box: result,
+    box,
   };
 }
 
@@ -205,10 +232,10 @@ function styleValue(style: string | null, property: string): string | null {
   return null;
 }
 
-function hintFor(el: Element, tag: string, result: PathResult): string {
-  const w = fmt(result.maxX - result.minX);
-  const h = fmt(result.maxY - result.minY);
-  const at = `at ${fmt(result.minX)}, ${fmt(result.minY)}`;
+function hintFor(el: Element, tag: string, result: PathResult, box: Box): string {
+  const w = fmt(box.maxX - box.minX);
+  const h = fmt(box.maxY - box.minY);
+  const at = `at ${fmt(box.minX)}, ${fmt(box.minY)}`;
   if (tag === 'polygon' || tag === 'polyline') {
     const points = numbers(el.getAttribute('points') ?? '').length >> 1;
     const closed = tag === 'polyline' ? ', closed' : '';
@@ -362,8 +389,10 @@ interface Segment {
 }
 
 /**
- * Rewrites `d` into absolute commands with `m` applied, and reports the
- * bounding box on the way. Returns null when the data is empty or when an
+ * Rewrites `d` into absolute commands with `m` applied, and reports a bounding
+ * box on the way. The box uses Bezier control points rather than true curve
+ * extrema, so it can be a little loose - never tight, which is what matters
+ * for a fallback viewBox. Returns null when the data is empty or when an
  * elliptical arc cannot be mapped exactly (rotated arc under a non-uniform
  * scale) - the caller then retries with the identity matrix.
  */
@@ -452,11 +481,11 @@ function convertPath(d: string, m: Matrix): PathResult | null {
         if (rot !== 0 && !uniform) return null;
         const rx = a * p[0];
         const ry = dd * p[1];
+        const x1 = tx(curX);
+        const y1 = ty(curY);
         curX = ox + p[5];
         curY = oy + p[6];
-        // Radii bound the arc generously; exact extrema are not worth the maths here.
-        mark(tx(curX) - rx, ty(curY) - ry);
-        mark(tx(curX) + rx, ty(curY) + ry);
+        markArc(x1, y1, rx, ry, rot, p[3], p[4], tx(curX), ty(curY), mark);
         out += `A${fmt(rx)} ${fmt(ry)} ${fmt(rot)} ${p[3]} ${p[4]} ${put(curX, curY)}`;
         break;
       }
@@ -474,6 +503,63 @@ function convertPath(d: string, m: Matrix): PathResult | null {
   // A region has to be closed to be fillable; a stray open subpath is harmless to close.
   if (!out.endsWith('Z')) out += 'Z';
   return { d: out, commands, ...box };
+}
+
+/**
+ * Bounds an arc by the ellipse it rides on, found with the endpoint-to-centre
+ * conversion from the SVG spec. Exact for the paired half-arcs our primitives
+ * emit; for a partial arc it is generous but at least centred, which
+ * `endpoint +/- radius` is not.
+ */
+function markArc(
+  x1: number,
+  y1: number,
+  rx0: number,
+  ry0: number,
+  rotDeg: number,
+  fA: number,
+  fS: number,
+  x2: number,
+  y2: number,
+  mark: (x: number, y: number) => void,
+): void {
+  mark(x1, y1);
+  mark(x2, y2);
+
+  let rx = Math.abs(rx0);
+  let ry = Math.abs(ry0);
+  if (!(rx > 0) || !(ry > 0)) return; // degenerate radii: SVG draws a straight line
+
+  const phi = (rotDeg * Math.PI) / 180;
+  const cos = Math.cos(phi);
+  const sin = Math.sin(phi);
+  const dx = (x1 - x2) / 2;
+  const dy = (y1 - y2) / 2;
+  const xp = cos * dx + sin * dy;
+  const yp = -sin * dx + cos * dy;
+
+  const lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
+  if (lambda > 1) {
+    const s = Math.sqrt(lambda);
+    rx *= s;
+    ry *= s;
+  }
+
+  const den = rx * rx * yp * yp + ry * ry * xp * xp;
+  if (den === 0) return; // coincident endpoints: the arc is skipped entirely
+
+  const num = rx * rx * ry * ry - rx * rx * yp * yp - ry * ry * xp * xp;
+  let scale = Math.sqrt(Math.max(0, num / den));
+  if (fA === fS) scale = -scale;
+  const cxp = (scale * rx * yp) / ry;
+  const cyp = (-scale * ry * xp) / rx;
+  const cx = cos * cxp - sin * cyp + (x1 + x2) / 2;
+  const cy = sin * cxp + cos * cyp + (y1 + y2) / 2;
+
+  const ex = Math.hypot(rx * cos, ry * sin);
+  const ey = Math.hypot(rx * sin, ry * cos);
+  mark(cx - ex, cy - ey);
+  mark(cx + ex, cy + ey);
 }
 
 /**

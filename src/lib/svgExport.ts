@@ -1,12 +1,13 @@
 import type { Asset, BlendMode, Fill } from '../types';
 import { sortedRegions } from '../templates';
 import type { ViewBox } from './geometry';
-import { centerOf, fillTransform, ringRadius, viewBoxOf } from './geometry';
+import { centerOf, fillTransform, ringGeometry, viewBoxOf } from './geometry';
 import type { ExportInput } from './pngExport';
 import { exportEdge } from './pngExport';
 import { downloadBlob } from './fileIo';
 
 const GRAIN_FILTER_ID = 'masklab-grain';
+const SHAPE_CLIP_ID = 'masklab-shape';
 /** Noise texels across the canvas width in `paintGrain`; used to size feTurbulence. */
 const GRAIN_TEXELS = 1024;
 
@@ -83,8 +84,9 @@ export function buildSvg(input: ExportInput): string {
   }
 
   if (composition.ringWidth > 0) {
+    const ring = ringGeometry(template, composition.ringWidth);
     body.push(
-      `<circle cx="${num(cx)}" cy="${num(cy)}" r="${num(ringRadius(vb, composition.ringWidth))}"` +
+      `<circle cx="${num(ring.cx)}" cy="${num(ring.cy)}" r="${num(ring.r)}"` +
         ` fill="none" stroke="${esc(composition.ringColor)}" stroke-width="${num(composition.ringWidth)}"/>`,
     );
   }
@@ -107,7 +109,27 @@ export function buildSvg(input: ExportInput): string {
     lines.push(`  ${rect(vb, composition.background)}`);
   }
   lines.push(indent([rotated], '  '));
-  if (composition.grain > 0) lines.push(indent(grainOverlay(vb, composition.grain), '  '));
+  if (composition.grain > 0) {
+    // Same reasoning as the canvas: without the plate, an unclipped overlay
+    // would tint the empty area that is supposed to be transparent.
+    const clipToShape = composition.transparentBackground;
+    if (clipToShape) {
+      defs.push(
+        `<clipPath id="${SHAPE_CLIP_ID}">` +
+          regions.map((r) => `<path d="${esc(r.d)}"/>`).join('') +
+          `</clipPath>`,
+      );
+    }
+    const overlay = grainOverlay(vb, composition.grain);
+    lines.push(
+      indent(
+        clipToShape
+          ? [`<g clip-path="url(#${SHAPE_CLIP_ID})">`, ...overlay, '</g>']
+          : overlay,
+        '  ',
+      ),
+    );
+  }
   lines.push('</svg>');
 
   return lines.join('\n') + '\n';

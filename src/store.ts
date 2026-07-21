@@ -299,6 +299,12 @@ export const useStore = create<MaskLabState>((set, get) => {
   };
 });
 
+/* Dev-only handle, so the running app can be driven and inspected from the
+   console (and by automated checks) without shipping anything to production. */
+if (import.meta.env.DEV) {
+  (window as unknown as { __masklab?: typeof useStore }).__masklab = useStore;
+}
+
 function pick<T>(xs: T[]): T {
   return xs[Math.floor(Math.random() * xs.length)];
 }

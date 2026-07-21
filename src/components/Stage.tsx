@@ -37,6 +37,9 @@ export function Stage() {
   );
 
   /* ---------------------------------------------------------------- sizing */
+  /* The stage box is square by CSS (aspect-square), so we only read it — never
+     size it from JS. Measuring a box whose own height we also set would be a
+     feedback loop, and on a narrow viewport it produced a non-square canvas. */
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -259,7 +262,7 @@ export function Stage() {
 
   return (
     <section
-      className="flex min-h-0 flex-1 flex-col"
+      className="flex flex-col lg:min-h-0 lg:flex-1"
       aria-label="Composition stage"
       onDragOver={(e) => {
         e.preventDefault();
@@ -268,12 +271,11 @@ export function Stage() {
       onDragLeave={() => setDropping(false)}
     >
       <div
-        ref={wrapRef}
-        className="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-8"
+        className="flex aspect-square w-full items-center justify-center p-4 sm:p-8 lg:aspect-auto lg:min-h-0 lg:flex-1"
       >
         <div
-          className="checkerboard relative"
-          style={{ width: size || undefined, height: size || undefined }}
+          ref={wrapRef}
+          className="checkerboard relative aspect-square h-full max-h-full w-auto max-w-full"
         >
           <canvas
             ref={canvasRef}

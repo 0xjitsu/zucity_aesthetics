@@ -1,6 +1,6 @@
 import type { Asset, Composition, Template } from '../types';
 import { sortedRegions } from '../templates';
-import { fillTransform, ringRadius, viewBoxOf } from './geometry';
+import { fillTransform, ringGeometry, viewBoxOf } from './geometry';
 
 const DEG = Math.PI / 180;
 
@@ -77,15 +77,20 @@ export function renderComposition(ctx: CanvasRenderingContext2D, input: RenderIn
     ctx.save();
     ctx.strokeStyle = composition.ringColor;
     ctx.lineWidth = composition.ringWidth;
+    const ring = ringGeometry(template, composition.ringWidth);
     ctx.beginPath();
-    ctx.arc(cx, cy, ringRadius(vb, composition.ringWidth), 0, Math.PI * 2);
+    ctx.arc(ring.cx, ring.cy, ring.r, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
 
   ctx.restore();
 
-  if (composition.grain > 0) paintGrain(ctx, size, composition.grain);
+  if (composition.grain > 0) {
+    // On a transparent export the grain would otherwise haze the empty area,
+    // because an 'overlay' blend still paints where there is nothing beneath.
+    paintGrain(ctx, size, composition.grain, !paintBackground);
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -119,10 +124,24 @@ function makeGrainTile(): HTMLCanvasElement {
  * Grain is scaled with the render size so a 640px preview and a 2000px export
  * show the same grain structure rather than the same pixel count.
  */
-export function paintGrain(ctx: CanvasRenderingContext2D, size: number, grain: number): void {
+export function paintGrain(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  grain: number,
+  keepExistingAlphaOnly = false,
+): void {
   if (!grainTile) grainTile = makeGrainTile();
   const pattern = ctx.createPattern(grainTile, 'repeat');
   if (!pattern) return;
+
+  // Snapshot the alpha before the grain lands, so it can be masked back after.
+  let mask: HTMLCanvasElement | null = null;
+  if (keepExistingAlphaOnly) {
+    mask = document.createElement('canvas');
+    mask.width = size;
+    mask.height = size;
+    mask.getContext('2d')?.drawImage(ctx.canvas, 0, 0);
+  }
   const scale = size / 1024;
   pattern.setTransform(new DOMMatrix([scale, 0, 0, scale, 0, 0]));
   ctx.save();
@@ -131,4 +150,11 @@ export function paintGrain(ctx: CanvasRenderingContext2D, size: number, grain: n
   ctx.fillStyle = pattern;
   ctx.fillRect(0, 0, size, size);
   ctx.restore();
+
+  if (mask) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(mask, 0, 0);
+    ctx.restore();
+  }
 }

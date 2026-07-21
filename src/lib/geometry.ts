@@ -58,9 +58,65 @@ export function fillTransform(fill: Fill, asset: Asset, vb: ViewBox): FillTransf
   };
 }
 
-/** Radius of the ring stroke: the largest circle inscribed in the viewBox. */
-export function ringRadius(vb: ViewBox, ringWidth: number): number {
-  return Math.max(0, Math.min(vb.w, vb.h) / 2 - ringWidth / 2);
+export interface Ring {
+  cx: number;
+  cy: number;
+  r: number;
+}
+
+const bboxCache = new Map<string, ViewBox>();
+
+/**
+ * Union bounding box of every region, measured with the browser's own path
+ * geometry rather than estimated. Templates rarely fill their viewBox edge to
+ * edge — the yin-yang sits at r=5 inside a 12-unit box — so a ring inscribed in
+ * the viewBox floats visibly off the artwork. Measuring the shape makes the
+ * ring hug it instead.
+ */
+export function shapeBounds(template: Template): ViewBox {
+  const cached = bboxCache.get(template.id);
+  if (cached) return cached;
+
+  const vb = viewBoxOf(template);
+  let box: ViewBox = vb;
+  try {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+    document.body.appendChild(svg);
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const region of template.regions) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', region.d);
+      svg.appendChild(path);
+      const b = path.getBBox();
+      minX = Math.min(minX, b.x);
+      minY = Math.min(minY, b.y);
+      maxX = Math.max(maxX, b.x + b.width);
+      maxY = Math.max(maxY, b.y + b.height);
+    }
+    svg.remove();
+    if (Number.isFinite(minX) && maxX > minX && maxY > minY) {
+      box = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+    }
+  } catch {
+    // Non-DOM contexts fall back to the viewBox, which is never wrong, only loose.
+  }
+
+  bboxCache.set(template.id, box);
+  return box;
+}
+
+/** The ring stroke: largest circle inscribed in the artwork's bounding box. */
+export function ringGeometry(template: Template, ringWidth: number): Ring {
+  const b = shapeBounds(template);
+  return {
+    cx: b.x + b.w / 2,
+    cy: b.y + b.h / 2,
+    r: Math.max(0, Math.min(b.w, b.h) / 2 - ringWidth / 2),
+  };
 }
 
 const DEG = Math.PI / 180;
