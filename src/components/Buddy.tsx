@@ -54,7 +54,7 @@ export function Buddy() {
     line = `${selectedName.toLowerCase()} selected · drag to pan · scroll to zoom · shift-scroll to spin`;
   } else if (textured) {
     face = TEXTURED;
-    line = 'looking good — export it when you are happy';
+    line = 'looking good — click a region to remix, or export it';
     excited = true;
   }
 
