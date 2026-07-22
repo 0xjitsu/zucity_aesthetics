@@ -48,6 +48,17 @@
 
 :root {
   color-scheme: dark;
+  /* Notched phones: the app draws edge to edge (viewport-fit=cover), so the
+     shell pads by the safe areas instead of letting content sit under them. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html {
+  /* iOS inflates text on rotation without this. */
+  -webkit-text-size-adjust: 100%;
 }
 
 html,
@@ -107,6 +118,7 @@ body {
 /* --------------------------------------------------------------- buttons */
 
 .btn {
+  touch-action: manipulation;
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.12em;
@@ -406,6 +418,22 @@ textarea:hover,
 input[type='number']:hover,
 input[type='text']:hover {
   border-color: var(--color-accent-dim);
+}
+
+/* iOS zooms the whole page into any focused input below 16px. On touch
+   devices every form control meets that floor; the desktop keeps its 11px
+   mono. This is the difference between web-jank and native feel. */
+@media (hover: none) and (pointer: coarse) {
+  select,
+  textarea,
+  input[type='number'],
+  input[type='text'] {
+    font-size: 16px;
+  }
+
+  input[type='range'] {
+    height: 32px; /* a fatter rail is a fairer thumb target */
+  }
 }
 
 /* Scrollbars, both engines. */

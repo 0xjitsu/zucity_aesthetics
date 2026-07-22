@@ -122,7 +122,12 @@ export function Stage() {
     last: [0, 0],
     timer: null,
   });
-  const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
+  const pinchRef = useRef<{
+    dist: number;
+    scale: number;
+    angle: number;
+    rotation: number;
+  } | null>(null);
 
   const beginGesture = () => {
     const g = gestureRef.current;
@@ -188,12 +193,18 @@ export function Stage() {
     }
   };
 
-  /* Touch: two fingers pinch the selected texture. One finger pans via pointer events. */
+  /* Touch: two fingers pinch to zoom AND twist to spin — one gesture, both
+     axes, the native-app expectation. One finger pans via pointer events. */
   const onTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     if (e.touches.length !== 2 || !selectedId) return;
     const fill = useStore.getState().composition.fills[selectedId];
     if (!fill) return;
-    pinchRef.current = { dist: touchDistance(e.touches), scale: fill.scale };
+    pinchRef.current = {
+      dist: touchDistance(e.touches),
+      scale: fill.scale,
+      angle: touchAngle(e.touches),
+      rotation: fill.rotation,
+    };
     useStore.getState().pushHistory();
   };
 
@@ -201,8 +212,15 @@ export function Stage() {
     const pinch = pinchRef.current;
     if (!pinch || e.touches.length !== 2 || !selectedId) return;
     e.preventDefault();
-    const next = pinch.scale * (touchDistance(e.touches) / pinch.dist);
-    useStore.getState().updateFill(selectedId, { scale: clamp(next, 0.05, 20) });
+    const nextScale = pinch.scale * (touchDistance(e.touches) / pinch.dist);
+    // Shortest-path angle delta, so crossing the ±180° seam never snaps.
+    let dAngle = touchAngle(e.touches) - pinch.angle;
+    if (dAngle > 180) dAngle -= 360;
+    if (dAngle < -180) dAngle += 360;
+    useStore.getState().updateFill(selectedId, {
+      scale: clamp(nextScale, 0.05, 20),
+      rotation: pinch.rotation + dAngle,
+    });
   };
 
   const onTouchEnd = () => {
@@ -264,7 +282,7 @@ export function Stage() {
 
   return (
     <section
-      className="flex flex-col lg:min-h-0 lg:flex-1"
+      className="sticky top-0 z-20 flex flex-col border-b border-line bg-ground lg:static lg:z-auto lg:min-h-0 lg:flex-1 lg:border-b-0"
       aria-label="Composition stage"
       onDragOver={(e) => {
         e.preventDefault();
@@ -273,7 +291,7 @@ export function Stage() {
       onDragLeave={() => setDropping(false)}
     >
       <div
-        className="dotpaper flex aspect-square w-full items-center justify-center p-4 sm:p-8 lg:aspect-auto lg:min-h-0 lg:flex-1"
+        className="dotpaper flex h-[44dvh] w-full items-center justify-center p-3 sm:p-8 lg:h-auto lg:min-h-0 lg:flex-1"
       >
         <div
           ref={wrapRef}
@@ -316,4 +334,9 @@ function clamp(v: number, lo: number, hi: number) {
 function touchDistance(touches: React.TouchList) {
   const [a, b] = [touches[0], touches[1]];
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+function touchAngle(touches: React.TouchList) {
+  const [a, b] = [touches[0], touches[1]];
+  return (Math.atan2(b.clientY - a.clientY, b.clientX - a.clientX) * 180) / Math.PI;
 }

@@ -52,7 +52,14 @@ export default function App() {
   useStarterLook();
 
   return (
-    <div className="flex min-h-dvh flex-col bg-ground lg:fixed lg:inset-0 lg:min-h-0 lg:flex-row lg:overflow-hidden">
+    <div
+      className="flex min-h-dvh flex-col bg-ground lg:fixed lg:inset-0 lg:min-h-0 lg:flex-row lg:overflow-hidden"
+      style={{
+        paddingTop: 'var(--safe-top)',
+        paddingLeft: 'var(--safe-left)',
+        paddingRight: 'var(--safe-right)',
+      }}
+    >
       <a
         href="#inspector"
         className="label sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-raise focus:px-3 focus:py-2"
@@ -60,8 +67,12 @@ export default function App() {
         Skip to controls
       </a>
 
-      {/* min-w-0: the ticker's intrinsic width must never inflate the column. */}
-      <main className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
+      {/* Mobile: display-contents flattens header/ticker/stage into the page
+          column, so the stage's position:sticky travels the whole scroll — a
+          sticky element can never escape its parent, and main would otherwise
+          end exactly where the stage ends. Desktop: a normal flex column.
+          min-w-0 there so the ticker's intrinsic width cannot inflate it. */}
+      <main className="contents lg:flex lg:min-h-0 lg:min-w-0 lg:flex-1 lg:flex-col">
         <header className="flex items-center gap-3 border-b border-line px-4 py-1.5 sm:px-8">
           <h1 className="font-mono text-sm font-bold tracking-[0.3em] text-hot uppercase">
             MaskLab

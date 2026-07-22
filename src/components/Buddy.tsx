@@ -7,6 +7,13 @@ import { currentTemplate, useStore } from '../store';
  * buddy rather than a mascot. One buddy, whole app; whimsy is a garnish.
  */
 
+/** Static per device; a phone does not grow a mouse mid-session. */
+const COARSE =
+  typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+const GESTURES = COARSE
+  ? 'drag to pan · pinch to zoom · twist to spin'
+  : 'drag to pan · scroll to zoom · shift-scroll to spin';
+
 const IDLE = '(・_・)';
 const BLINK = '(-_-)';
 const SELECTED = '(o_o)!';
@@ -51,7 +58,7 @@ export function Buddy() {
     line = 'something went sideways — check the toast';
   } else if (selectedId && selectedName) {
     face = SELECTED;
-    line = `${selectedName.toLowerCase()} selected · drag to pan · scroll to zoom · shift-scroll to spin`;
+    line = `${selectedName.toLowerCase()} selected · ${GESTURES}`;
   } else if (textured) {
     face = TEXTURED;
     line = 'looking good — click a region to remix, or export it';

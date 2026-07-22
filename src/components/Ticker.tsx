@@ -21,7 +21,9 @@ export function Ticker() {
       assetCount > 0
         ? `${assetCount} texture${assetCount === 1 ? '' : 's'} loaded (^-^)b`
         : 'nothing leaves your browser 全部ローカル',
-      'scroll to zoom, shift-scroll to spin',
+      window.matchMedia('(pointer: coarse)').matches
+        ? 'pinch to zoom, twist to spin'
+        : 'scroll to zoom, shift-scroll to spin',
       'made for zucity ズシティのために',
       '\\(^o^)/ make a flag, an album cover, a sticker',
     ];
