@@ -5,7 +5,7 @@ import { ingestFiles } from './ingest';
  * The house textures — ZuCity reds, bundled with the app so the very first
  * canvas a visitor sees is already dressed. They go through the same ingest
  * pipeline as an upload, so they behave identically everywhere downstream:
- * region cards, randomize, JSON export, all of it.
+ * region cards, remix, JSON export, all of it.
  */
 const STARTERS = [
   'centipede.webp',
@@ -15,44 +15,66 @@ const STARTERS = [
   'silk.webp',
 ];
 
-let pending: Promise<Asset[]> | null = null;
+async function fetchOne(name: string): Promise<File | null> {
+  try {
+    const res = await fetch(`./textures/${name}`);
+    if (!res.ok) return null;
+    return new File([await res.blob()], name, { type: 'image/webp' });
+  } catch {
+    // Offline or blocked: the default look degrades to flat colour, quietly.
+    return null;
+  }
+}
 
-/** Fetch and ingest the bundled textures once per session. Failures are quiet
- *  by design — a missing starter must never toast at a visitor who did
- *  nothing; the app simply falls back to flat colours. */
-export function loadStarterAssets(): Promise<Asset[]> {
+async function ingestNames(names: string[]): Promise<Asset[]> {
+  const files = (await Promise.all(names.map(fetchOne))).filter((f): f is File => f !== null);
+  const { assets } = await ingestFiles(files);
+  return assets;
+}
+
+export interface StarterBatches {
+  /** The two textures this visit's look will wear — the boot-critical pair. */
+  pair: Promise<Asset[]>;
+  /** Everything else, arriving whenever it arrives. */
+  rest: Promise<Asset[]>;
+}
+
+let pending: StarterBatches | null = null;
+
+/**
+ * Load the starters in two waves. The visit's pair is chosen FIRST, then only
+ * those two files are fetched (in parallel) before the canvas dresses; the
+ * other three stream in behind. Waiting for all five was the visible
+ * boot delay — the look only ever needed two.
+ */
+export function loadStarterAssets(): StarterBatches {
   if (!pending) {
-    pending = (async () => {
-      const files: File[] = [];
-      for (const name of STARTERS) {
-        try {
-          const res = await fetch(`./textures/${name}`);
-          if (!res.ok) continue;
-          files.push(new File([await res.blob()], name, { type: 'image/webp' }));
-        } catch {
-          // Offline or blocked: skip, the default look degrades gracefully.
-        }
-      }
-      const { assets } = await ingestFiles(files);
-      return assets;
-    })();
+    const deck = [...STARTERS].sort(() => Math.random() - 0.5);
+    pending = {
+      pair: ingestNames(deck.slice(0, 2)),
+      rest: ingestNames(deck.slice(2)),
+    };
   }
   return pending;
 }
 
 /**
- * A per-visit look for the default yin-yang: two textures drawn from the
- * shuffled deck, one per S-half. Each dot reuses the transform of the SAME
- * texture as its host half, so the eye reads as a window through to the other
- * layer — the classic yin-yang move, with every visit shuffled differently.
+ * A look for the default yin-yang from a pair of textures. Each dot reuses
+ * the transform of the SAME texture as its opposite half, so the eye reads
+ * as a window through to the other layer — the classic yin-yang move,
+ * differently dealt on every visit.
  */
 export function starterLook(assets: Asset[]): Partial<Record<RegionId, Partial<Fill>>> {
   if (assets.length < 2) return {};
+  const [a, b] = assets;
 
-  const deck = [...assets].sort(() => Math.random() - 0.5);
-  const [a, b] = deck;
+  const lookA = dress(a.id);
+  const lookB = dress(b.id);
+  return { yang: lookA, dotT: lookA, yin: lookB, dotB: lookB };
+}
 
-  const dress = (assetId: string): Partial<Fill> => ({
+export function dress(assetId: string): Partial<Fill> {
+  return {
     kind: 'image',
     assetId,
     scale: 1 + Math.random() * 0.7,
@@ -62,12 +84,6 @@ export function starterLook(assets: Asset[]): Partial<Record<RegionId, Partial<F
     flipX: Math.random() < 0.3,
     flipY: false,
     opacity: 1,
-  });
-
-  // One transform per texture, shared by its half and the opposite eye, so
-  // the pattern lines up and the dot reads as a cut-out.
-  const lookA = dress(a.id);
-  const lookB = dress(b.id);
-
-  return { yang: lookA, dotT: lookA, yin: lookB, dotB: lookB };
+    blend: 'source-over',
+  };
 }

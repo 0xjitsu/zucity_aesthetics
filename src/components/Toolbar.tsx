@@ -146,7 +146,7 @@ export function Toolbar() {
           disabled={job !== null}
           onClick={() => randomize()}
         >
-          Randomize
+          Remix
         </button>
         <button
           type="button"
@@ -160,7 +160,7 @@ export function Toolbar() {
 
       <p className="num mt-2 leading-snug">
         {Object.keys(assets).length === 0
-          ? 'No images loaded yet. Randomize will shuffle colours only.'
+          ? 'No images loaded yet. Remix will shuffle colours only.'
           : `${Object.keys(assets).length} image${
               Object.keys(assets).length === 1 ? '' : 's'
             } loaded and embedded on export.`}

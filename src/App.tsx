@@ -25,7 +25,9 @@ function useStarterLook() {
     // claims the module flag and is immediately cleaned up, so a cleanup-based
     // cancel would cancel the only run there is. The pristine check below is
     // the real gate; a late resolution against an edited session is a no-op.
-    void loadStarterAssets().then((assets) => {
+    const { pair, rest } = loadStarterAssets();
+
+    void pair.then((assets) => {
       if (assets.length === 0) return;
       const s = useStore.getState();
 
@@ -43,6 +45,12 @@ function useStarterLook() {
         // updateFill, not assignAsset: nothing here may push undo history.
         if (patch) useStore.getState().updateFill(regionId, patch);
       }
+    });
+
+    // The other three starters are remix fodder, not boot-critical; they
+    // stream in behind the first paint and simply join the deck.
+    void rest.then((assets) => {
+      assets.forEach((a) => useStore.getState().addAsset(a));
     });
   }, []);
 }

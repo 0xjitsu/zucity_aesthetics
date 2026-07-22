@@ -227,6 +227,16 @@ export function Stage() {
     pinchRef.current = null;
   };
 
+  /* Remix is the play loop: every tap deals the loaded textures into the
+     regions afresh. Keyed remount replays the pop, so the button itself
+     bounces with each deal. */
+  const [remixCount, setRemixCount] = useState(0);
+  const canRemix = useStore((s) => Object.keys(s.assets).length >= 1);
+  const onRemix = () => {
+    useStore.getState().randomize();
+    setRemixCount((n) => n + 1);
+  };
+
   /* ------------------------------------------------------ files onto stage */
   const acceptFiles = useCallback(
     async (files: File[], clientX?: number, clientY?: number) => {
@@ -319,6 +329,29 @@ export function Stage() {
                 drop it here! ここにドロップ
               </span>
             </div>
+          ) : null}
+          {canRemix ? (
+            <button
+              key={remixCount}
+              type="button"
+              onClick={onRemix}
+              className="btn btn-accent pop absolute right-2 bottom-2 z-10 sm:right-3 sm:bottom-3"
+              aria-label="Remix: deal the loaded textures into the regions afresh"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4" />
+                <path d="M12.5 1v3h3M3.5 15v-3h-3" />
+              </svg>
+              remix
+            </button>
           ) : null}
         </div>
       </div>

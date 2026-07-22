@@ -11,7 +11,6 @@ import type {
   Template,
   TextSpec,
 } from './types';
-import { BLEND_MODES } from './types';
 import {
   CUSTOM_TEMPLATE_ID,
   DEFAULT_TEMPLATE_ID,
@@ -128,6 +127,9 @@ export interface MaskLabState {
 export function currentTemplate(state: MaskLabState): Template {
   return findTemplate(state.composition.templateId, state.customTemplate);
 }
+
+/** The remix spice rack: blends that flatter photos instead of mangling them. */
+const REMIX_BLENDS: BlendMode[] = ['multiply', 'screen', 'overlay', 'soft-light'];
 
 let toastSeq = 0;
 
@@ -308,27 +310,57 @@ export const useStore = create<MaskLabState>((set, get) => {
       record();
       set((s) => {
         const template = currentTemplate(s);
+        const regions = sortedRegions(template);
         const assetIds = Object.keys(s.assets);
         const fills: Record<RegionId, Fill> = {};
-        for (const region of sortedRegions(template)) {
-          const base = defaultFill(region);
-          const assetId = assetIds.length
-            ? assetIds[Math.floor(Math.random() * assetIds.length)]
-            : undefined;
-          fills[region.id] = {
-            ...base,
-            kind: assetId ? 'image' : 'color',
-            assetId,
-            color: assetId ? base.color : randomHex(),
-            scale: 0.9 + Math.random() * 1.4,
-            offsetX: (Math.random() - 0.5) * template.viewBox[2] * 0.3,
-            offsetY: (Math.random() - 0.5) * template.viewBox[3] * 0.3,
-            rotation: Math.round(Math.random() * 360),
-            flipX: Math.random() > 0.7,
-            flipY: Math.random() > 0.85,
-            blend: Math.random() > 0.75 ? pick(BLEND_MODES) : 'source-over',
-          };
+
+        const randomTransform = (assetId: string): Fill => ({
+          ...defaultFill(regions[0]),
+          regionId: '',
+          kind: 'image' as const,
+          assetId,
+          scale: 0.9 + Math.random() * 1.4,
+          offsetX: (Math.random() - 0.5) * template.viewBox[2] * 0.3,
+          offsetY: (Math.random() - 0.5) * template.viewBox[3] * 0.3,
+          rotation: Math.round(Math.random() * 360),
+          flipX: Math.random() > 0.7,
+          flipY: Math.random() > 0.85,
+          // A whisper of spice, not chaos: remix is for playing with photos,
+          // and a surprise hue/exclusion blend reads as broken, not playful.
+          blend: Math.random() > 0.9 ? pick(REMIX_BLENDS) : 'source-over',
+        });
+
+        // The classic yin-yang deal: two textures, each dot wearing the
+        // OPPOSITE half's exact transform so it reads as a cut-out window.
+        const ids = regions.map((r) => r.id);
+        const isYinYang =
+          ids.length === 4 && ['yang', 'yin', 'dotT', 'dotB'].every((id) => ids.includes(id));
+
+        if (assetIds.length >= 2 && isYinYang) {
+          const deck = [...assetIds].sort(() => Math.random() - 0.5);
+          const lookA = randomTransform(deck[0]);
+          const lookB = randomTransform(deck[1]);
+          for (const [regionId, look] of [
+            ['yang', lookA],
+            ['dotT', lookA],
+            ['yin', lookB],
+            ['dotB', lookB],
+          ] as const) {
+            fills[regionId] = { ...look, regionId };
+          }
+          return { composition: { ...s.composition, fills } };
         }
+
+        // General deal: shuffle the deck across regions so every texture gets
+        // playtime before any repeats; flat colours only when there is nothing
+        // else to deal.
+        const deck = [...assetIds].sort(() => Math.random() - 0.5);
+        regions.forEach((region, i) => {
+          const assetId = deck.length ? deck[i % deck.length] : undefined;
+          fills[region.id] = assetId
+            ? { ...randomTransform(assetId), regionId: region.id }
+            : { ...defaultFill(region), color: randomHex() };
+        });
         return { composition: { ...s.composition, fills } };
       });
     },
