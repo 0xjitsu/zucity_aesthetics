@@ -1,25 +1,49 @@
 @import 'tailwindcss';
 
 /* --------------------------------------------------------------------------
-   MaskLab — darkroom
-   Dark ground, one hot accent (safelight red), generous whitespace.
-   The canvas is the hero; controls recede until touched.
+   MaskLab — ZuCity edition
+   Design values from zucity.org: near-black ground, Space Mono caps display,
+   violet as the dominant accent with 2px borders, red reserved for the
+   wordmark and errors, cyan as a rare sparkle. Whimsy vocabulary from
+   heyclicky: sticker rotations, kaomoji, squishy buttons, marquee energy.
+   The canvas is still the hero; the controls are just friendlier now.
    -------------------------------------------------------------------------- */
 
-@theme inline {
-  --color-ground: #08080a;
-  --color-panel: #0e0e11;
-  --color-raise: #141419;
-  --color-line: #1f1f26;
-  --color-line-soft: #17171d;
-  --color-ink: #ecebe7;
-  --color-muted: #8b8b95;
-  --color-faint: #5a5a65;
-  --color-accent: #ff3b14;
-  --color-accent-dim: #b62a0e;
+@font-face {
+  font-family: 'Space Mono';
+  src: url('./fonts/SpaceMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+@font-face {
+  font-family: 'Space Mono';
+  src: url('./fonts/SpaceMono-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@theme inline {
+  --color-ground: #0a0a0a;
+  --color-panel: #101012;
+  --color-raise: #16161a;
+  --color-line: #232329;
+  --color-line-soft: #19191e;
+  --color-ink: #e5e5e5;
+  --color-muted: #9a9aa4;
+  --color-faint: #62626d;
+  /* ZuCity violet — the working accent for selection, focus, borders. */
+  --color-accent: #a78bfa;
+  --color-accent-dim: #6d5bd0;
+  /* ZuCity red — the wordmark, and errors. Hot, so used sparingly. */
+  --color-hot: #dc2626;
+  /* ZuCity cyan — a sparkle, one or two places only. */
+  --color-spark: #00d9ff;
+
+  --font-sans:
+    'Noto Sans JP', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial,
+    sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 }
 
 :root {
@@ -42,7 +66,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 40%, transparent);
 }
 
 :focus-visible {
@@ -50,11 +74,20 @@ body {
   outline-offset: 2px;
 }
 
-/* Micro-labels: the recede-until-touched voice of the whole UI. */
+/* Dotted grid paper, the heyclicky ground — dark. Sits on the stage side. */
+.dotpaper {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-ink) 7%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+
+/* Micro-labels: ZuCity's wide-tracked mono caps. */
 .label {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-faint);
 }
@@ -71,10 +104,12 @@ body {
   border: 1px solid var(--color-line);
 }
 
+/* --------------------------------------------------------------- buttons */
+
 .btn {
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted);
   background: var(--color-raise);
@@ -89,12 +124,19 @@ body {
   transition:
     color 140ms ease,
     border-color 140ms ease,
-    background-color 140ms ease;
+    background-color 140ms ease,
+    transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 140ms ease;
 }
 
 .btn:hover:not(:disabled) {
   color: var(--color-ink);
-  border-color: #33333d;
+  border-color: var(--color-accent);
+  transform: rotate(-0.8deg) translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .btn:disabled {
@@ -105,23 +147,171 @@ body {
 .btn-accent {
   color: var(--color-ground);
   background: var(--color-accent);
-  border-color: var(--color-accent);
+  border: 2px solid var(--color-accent);
+  box-shadow: 3px 3px 0 var(--color-accent-dim);
 }
 
 .btn-accent:hover:not(:disabled) {
   color: var(--color-ground);
-  background: #ff5330;
-  border-color: #ff5330;
+  background: #b9a3fb;
+  border-color: #b9a3fb;
+  transform: rotate(0.8deg) translateY(-1px);
+  box-shadow: 4px 4px 0 var(--color-accent-dim);
+}
+
+.btn-accent:active:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow: 1px 1px 0 var(--color-accent-dim);
+}
+
+/* ---------------------------------------------------------------- sticker */
+
+/* Region cards lean like stickers on a fridge and straighten when touched.
+   Rotation comes from the nth-child so it is deterministic, not random. */
+.sticker {
+  transition:
+    transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 140ms ease,
+    box-shadow 180ms ease;
+}
+
+.sticker:nth-child(odd) {
+  transform: rotate(-0.7deg);
+}
+
+.sticker:nth-child(even) {
+  transform: rotate(0.55deg);
+}
+
+.sticker:nth-child(3n) {
+  transform: rotate(0.9deg);
+}
+
+@media (hover: hover) {
+  .sticker:hover {
+    transform: rotate(0deg) translateY(-2px);
+    box-shadow: 4px 4px 0 color-mix(in srgb, var(--color-accent) 35%, transparent);
+  }
+}
+
+.sticker-selected {
+  transform: rotate(0deg) !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 4px 4px 0 var(--color-accent-dim);
+}
+
+/* --------------------------------------------------------------- marquee */
+
+/* The ZuCity event ticker: one long strip, +++ separators, drifts left.
+   The track holds two copies of the content so the loop is seamless. */
+.ticker {
+  overflow: hidden;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-panel);
+}
+
+.ticker-track {
+  display: inline-flex;
+  animation: ticker-drift 36s linear infinite;
+  will-change: transform;
+}
+
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ---------------------------------------------------------------- motion */
+
+@keyframes bounce-in {
+  0% {
+    transform: translateY(14px) scale(0.94);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-3px) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bounce-in {
+  animation: bounce-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes wobble {
+  0%,
+  100% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
+}
+
+.wobble {
+  animation: wobble 900ms ease-in-out infinite;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pop {
+  animation: pop 220ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* The buddy blinks by swapping glyphs in JS; this just keeps it gentle. */
+.buddy {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.buddy-face {
+  color: var(--color-accent);
+  font-weight: 700;
+  display: inline-block;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.buddy-face-excited {
+  transform: translateY(-2px) rotate(-4deg);
 }
 
 /* Checkerboard under the stage, so transparency reads honestly. */
 .checkerboard {
   background-color: #121215;
   background-image:
-    linear-gradient(45deg, #191920 25%, transparent 25%),
-    linear-gradient(-45deg, #191920 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #191920 75%),
-    linear-gradient(-45deg, transparent 75%, #191920 75%);
+    linear-gradient(45deg, #1a1a20 25%, transparent 25%),
+    linear-gradient(-45deg, #1a1a20 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1a1a20 75%),
+    linear-gradient(-45deg, transparent 75%, #1a1a20 75%);
   background-size: 16px 16px;
   background-position:
     0 0,
@@ -130,7 +320,8 @@ body {
     -8px 0;
 }
 
-/* Range inputs: thin rail, square accent thumb. No rounded-everything. */
+/* ----------------------------------------------------------------- inputs */
+
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
@@ -152,16 +343,21 @@ input[type='range']::-moz-range-track {
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 3px;
-  height: 14px;
-  margin-top: -7px;
+  width: 5px;
+  height: 16px;
+  margin-top: -8px;
   background: var(--color-accent);
   border: 0;
+  transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scaleY(1.35);
 }
 
 input[type='range']::-moz-range-thumb {
-  width: 3px;
-  height: 14px;
+  width: 5px;
+  height: 16px;
   border-radius: 0;
   background: var(--color-accent);
   border: 0;
@@ -170,10 +366,18 @@ input[type='range']::-moz-range-thumb {
 input[type='color'] {
   -webkit-appearance: none;
   appearance: none;
-  border: 1px solid var(--color-line);
+  border: 2px solid var(--color-line);
   background: transparent;
   padding: 0;
   cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+input[type='color']:hover {
+  border-color: var(--color-accent);
+  transform: rotate(-2deg);
 }
 
 input[type='color']::-webkit-color-swatch-wrapper {
@@ -186,19 +390,28 @@ input[type='color']::-webkit-color-swatch {
 
 select,
 input[type='number'],
-input[type='text'] {
+input[type='text'],
+textarea {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--color-ink);
   background: var(--color-raise);
   border: 1px solid var(--color-line);
   padding: 6px 8px;
+  transition: border-color 140ms ease;
+}
+
+select:hover,
+textarea:hover,
+input[type='number']:hover,
+input[type='text']:hover {
+  border-color: var(--color-accent-dim);
 }
 
 /* Scrollbars, both engines. */
 .scroll-thin {
   scrollbar-width: thin;
-  scrollbar-color: #2a2a33 transparent;
+  scrollbar-color: #2e2e38 transparent;
 }
 
 .scroll-thin::-webkit-scrollbar {
@@ -206,13 +419,14 @@ input[type='text'] {
 }
 
 .scroll-thin::-webkit-scrollbar-thumb {
-  background: #2a2a33;
+  background: #2e2e38;
 }
 
 .scroll-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 
+/* Whimsy is a garnish, never a barrier. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -220,5 +434,15 @@ input[type='text'] {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .ticker-track {
+    animation: none;
+  }
+
+  .sticker:nth-child(odd),
+  .sticker:nth-child(even),
+  .sticker:nth-child(3n) {
+    transform: none;
   }
 }

@@ -93,12 +93,12 @@ export function RegionCard({ region, fill }: RegionCardProps) {
   const frame = dropping
     ? 'border-accent border-dashed bg-accent/5'
     : selected
-      ? 'border-accent bg-raise'
+      ? 'sticker-selected bg-raise'
       : 'border-line bg-panel';
 
   return (
     <article
-      className={`border transition-colors ${frame}`}
+      className={`sticker border ${frame}`}
       onMouseEnter={() => hover(region.id)}
       onMouseLeave={() => hover(null)}
       onFocus={() => hover(region.id)}

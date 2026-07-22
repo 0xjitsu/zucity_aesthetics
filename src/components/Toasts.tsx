@@ -1,4 +1,12 @@
 import { useStore } from '../store';
+import type { ToastTone } from '../store';
+
+/** The toast speaks kaomoji before it speaks words. Text art, not emoji. */
+const FACE: Record<ToastTone, string> = {
+  error: '(x_x)',
+  info: '(・o・)',
+  ok: '(^-^)b',
+};
 
 export function Toasts() {
   const toasts = useStore((s) => s.toasts);
@@ -13,14 +21,22 @@ export function Toasts() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`panel pointer-events-auto flex items-start gap-2 border-l-2 ${
-            t.tone === 'error' ? 'border-l-accent' : 'border-l-line'
+          className={`panel bounce-in pointer-events-auto flex items-start gap-2 border-l-2 ${
+            t.tone === 'error' ? 'border-l-hot' : t.tone === 'ok' ? 'border-l-accent' : 'border-l-line'
           }`}
         >
-          <div className="min-w-0 flex-1 py-3 pl-3">
+          <span
+            aria-hidden="true"
+            className={`shrink-0 pt-3 pl-3 font-mono text-[12px] font-bold ${
+              t.tone === 'error' ? 'text-hot' : 'text-accent'
+            }`}
+          >
+            {FACE[t.tone]}
+          </span>
+          <div className="min-w-0 flex-1 py-3">
             <p
               className={`truncate text-[12px] leading-tight ${
-                t.tone === 'error' ? 'text-accent' : 'text-ink'
+                t.tone === 'error' ? 'text-hot' : 'text-ink'
               }`}
             >
               {t.title}

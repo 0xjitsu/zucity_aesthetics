@@ -55,7 +55,7 @@ export function Toolbar() {
     void run('import', async () => {
       const doc = await importJson(file);
       loadFile(doc);
-      toast('ok', 'Document loaded', file.name);
+      toast('ok', 'look restored \\(^o^)/', file.name);
     });
   }
 
@@ -70,7 +70,7 @@ export function Toolbar() {
         onClick={() =>
           void run('png', async () => {
             await exportPng(input());
-            toast('ok', 'PNG written', `${composition.exportSize} px`);
+            toast('ok', 'png saved \\(^o^)/', `${composition.exportSize} px, straight to your downloads`);
           })
         }
       >
@@ -85,7 +85,7 @@ export function Toolbar() {
           onClick={() =>
             void run('svg', () => {
               exportSvg(input());
-              toast('ok', 'SVG written', template.name);
+              toast('ok', 'svg saved \\(^o^)/', 'every region stays editable in illustrator or figma');
             })
           }
         >
@@ -99,7 +99,7 @@ export function Toolbar() {
           onClick={() =>
             void run('copy', async () => {
               await copyPngToClipboard(input());
-              toast('ok', 'PNG copied', 'The image is on your clipboard.');
+              toast('ok', 'copied!', 'the image is on your clipboard — paste it anywhere');
             })
           }
         >
@@ -113,7 +113,7 @@ export function Toolbar() {
           onClick={() =>
             void run('json', () => {
               exportJson({ ...input(), customTemplate, textSpec, fonts });
-              toast('ok', 'Document written', `${Object.keys(assets).length} assets embedded`);
+              toast('ok', 'look saved \\(^o^)/', `${Object.keys(assets).length} textures packed inside`);
             })
           }
         >

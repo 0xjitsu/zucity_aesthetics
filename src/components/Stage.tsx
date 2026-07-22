@@ -5,6 +5,7 @@ import { deltaToViewBox, fitToSquare, pointToViewBox, viewBoxOf } from '../lib/g
 import { useImages } from '../lib/imageCache';
 import { renderComposition } from '../lib/render';
 import { filesFromClipboard, filesFromDataTransfer, ingestFiles } from '../lib/ingest';
+import { Buddy } from './Buddy';
 import type { RegionId } from '../types';
 
 /** Identity-transform context used purely for hit-testing in viewBox units. */
@@ -86,7 +87,7 @@ export function Stage() {
       const isHovered = region.id === hoveredId;
       if (!isSelected && !isHovered) continue;
       ctx.lineWidth = (isSelected ? 2 : 1) / fit.scale;
-      ctx.strokeStyle = isSelected ? '#ff3b14' : 'rgba(236,235,231,0.5)';
+      ctx.strokeStyle = isSelected ? '#a78bfa' : 'rgba(229,229,229,0.5)';
       ctx.stroke(path);
     }
     ctx.restore();
@@ -272,7 +273,7 @@ export function Stage() {
       onDragLeave={() => setDropping(false)}
     >
       <div
-        className="flex aspect-square w-full items-center justify-center p-4 sm:p-8 lg:aspect-auto lg:min-h-0 lg:flex-1"
+        className="dotpaper flex aspect-square w-full items-center justify-center p-4 sm:p-8 lg:aspect-auto lg:min-h-0 lg:flex-1"
       >
         <div
           ref={wrapRef}
@@ -294,14 +295,16 @@ export function Stage() {
             onDrop={onDrop}
             onDragOver={(e) => e.preventDefault()}
           />
-          {dropping && (
-            <div className="pointer-events-none absolute inset-0 border-2 border-accent bg-accent/10" />
-          )}
+          {dropping ? (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center border-2 border-dashed border-accent bg-accent/10">
+              <span className="wobble bg-ground/80 px-4 py-2 font-mono text-xs tracking-[0.12em] text-accent uppercase">
+                drop it here! ここにドロップ
+              </span>
+            </div>
+          ) : null}
         </div>
       </div>
-      <p className="label px-4 pb-4 text-center sm:px-8">
-        Click a region to select · drag to pan · scroll to zoom · shift-scroll to spin
-      </p>
+      <Buddy />
     </section>
   );
 }

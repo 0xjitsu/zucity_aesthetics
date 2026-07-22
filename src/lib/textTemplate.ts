@@ -155,6 +155,14 @@ export const BUILTIN_FONTS: FontAsset[] = [
     url: './fonts/ZenKakuGothicNew-Black.ttf',
     coverage: 'Latin + Japanese kana and kanji',
   },
+  {
+    id: 'space-mono',
+    name: 'Space Mono Bold',
+    source: 'builtin',
+    // Same face the UI itself is set in — the house voice, typesettable.
+    url: './fonts/SpaceMono-Bold.ttf',
+    coverage: 'Latin',
+  },
 ];
 
 export function defaultTextSpec(): TextSpec {

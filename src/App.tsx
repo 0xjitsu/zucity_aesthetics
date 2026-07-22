@@ -1,4 +1,5 @@
 import { Stage } from './components/Stage';
+import { Ticker } from './components/Ticker';
 import { Inspector } from './components/Inspector';
 import { Toasts } from './components/Toasts';
 import { useKeyboard } from './hooks/useKeyboard';
@@ -15,11 +16,15 @@ export default function App() {
         Skip to controls
       </a>
 
-      <main className="flex flex-col lg:min-h-0 lg:flex-1">
+      {/* min-w-0: the ticker's intrinsic width must never inflate the column. */}
+      <main className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
         <header className="flex items-baseline gap-3 border-b border-line px-4 py-3 sm:px-8">
-          <h1 className="font-mono text-sm tracking-[0.28em] text-ink uppercase">MaskLab</h1>
-          <p className="label hidden sm:block">One shape, many textures</p>
+          <h1 className="font-mono text-sm font-bold tracking-[0.3em] text-hot uppercase">
+            MaskLab
+          </h1>
+          <p className="label hidden sm:block">one shape, many textures 一つの形、無数の質感</p>
         </header>
+        <Ticker />
         <Stage />
       </main>
 

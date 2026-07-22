@@ -136,7 +136,7 @@ export function Inspector() {
 
         {!customTemplate ? (
           <p className="num mt-3 leading-snug">
-            No custom template loaded. Any SVG with separate paths will do.
+            no custom shape yet — any SVG with separate paths will do (・o・)
           </p>
         ) : null}
       </Section>
@@ -157,7 +157,7 @@ export function Inspector() {
       <Section
         title="Regions"
         note={`${regions.length} in paint order`}
-        subtitle="Drop an image straight onto a region to fill it."
+        subtitle="drop an image on a region and it fills. that easy."
       >
         {regions.length === 0 ? (
           <p className="num leading-snug">

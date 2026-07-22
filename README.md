@@ -67,7 +67,7 @@ Shortcuts go inert while a form control has focus, so typing into the text box n
 ## What's Inside
 
 - **Per-region fills** — colour or image, each with its own zoom, spin, X/Y offset, flip, opacity and blend mode. Offsets are stored in template viewBox units, so they are resolution-independent.
-- **Text as a template** — a typed run is lowered to outline paths with [opentype.js](https://github.com/opentypejs/opentype.js) and installed as an ordinary template. Split the run per glyph, per line, or keep it whole. Three bundled fonts plus upload of your own `.ttf` / `.otf` / `.woff`.
+- **Text as a template** — a typed run is lowered to outline paths with [opentype.js](https://github.com/opentypejs/opentype.js) and installed as an ordinary template. Split the run per glyph, per line, or keep it whole. Four bundled fonts plus upload of your own `.ttf` / `.otf` / `.woff`.
 - **Broad image ingest** — JPG, PNG, WebP, AVIF, GIF, SVG, BMP, ICO, TIFF, and HEIC where the browser can decode it. SVG textures are rasterised generously so they survive being zoomed past 1×. Files over 4096 px on the long edge are downscaled on ingest. Every rejection names the file and the reason — nothing fails silently.
 - **Four exports** — PNG up to 4096 px, a real vector SVG with one `clipPath` per region, a JSON document that round-trips a whole look including its embedded assets, and copy-to-clipboard.
 - **Six template sources** — four built-ins, typed text, and custom SVG upload.
@@ -141,6 +141,7 @@ export const myShape: Template = {
 src/
   types.ts                Data model: Region, Template, Fill, Asset,
                           Composition, TextSpec, FontAsset, MaskLabFile
+  opentype-js.d.ts        Ambient types for opentype.js v2
   store.ts                Zustand state, 30-step undo, gesture/history contract
   lib/
     geometry.ts           fillTransform() — the shared transform contract
@@ -156,7 +157,8 @@ src/
   components/             Stage (canvas, hit-testing, gestures), Inspector,
                           TextPanel, RegionCard, Controls, Toolbar, Toasts
   hooks/useKeyboard.ts    Global shortcuts
-public/fonts/             Three bundled typefaces (SIL OFL 1.1)
+public/fonts/             Four bundled typefaces + LICENSE.txt (SIL OFL 1.1)
+public/llms.txt           Site overview for AI agents (llmstxt.org)
 ```
 
 <details>
@@ -164,7 +166,7 @@ public/fonts/             Three bundled typefaces (SIL OFL 1.1)
 
 ```bash
 npm install
-npm run dev        # vite dev server on :5173
+npm run dev        # vite dev server (:5173 by default)
 npm run build      # tsc -b && vite build  ->  dist/
 npm run preview    # serve the production build
 npm run lint       # oxlint
@@ -232,8 +234,9 @@ MaskLab's source is licensed under the **GNU AGPL v3** — see [LICENSE](LICENSE
 | `Anton-Regular.ttf` | Anton | © 2020 The Anton Project Authors |
 | `ArchivoBlack-Regular.ttf` | Archivo Black | © 2017 The Archivo Black Project Authors |
 | `ZenKakuGothicNew-Black.ttf` | Zen Kaku Gothic New | © 2022 The Zen Project Authors |
+| `SpaceMono-Regular.ttf`, `SpaceMono-Bold.ttf` | Space Mono | © 2016 The Space Mono Project Authors |
 
-The OFL permits redistribution, bundling, and embedding, including in a commercial product, provided the fonts are not sold on their own and the licence and copyright notices travel with them. It does **not** let you relicense the font files themselves. Full terms: [scripts.sil.org/OFL](https://scripts.sil.org/OFL). If you fork MaskLab, this obligation forks with you.
+The OFL permits redistribution, bundling, and embedding, including in a commercial product, provided the fonts are not sold on their own and the licence and copyright notices travel with them. It does **not** let you relicense the font files themselves. Attributions and the full licence text ship alongside the fonts in [`public/fonts/LICENSE.txt`](public/fonts/LICENSE.txt) — keep that file with them. Full terms: [scripts.sil.org/OFL](https://scripts.sil.org/OFL). If you fork MaskLab, this obligation forks with you.
 
 ---
 

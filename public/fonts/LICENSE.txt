@@ -13,6 +13,10 @@ Zen Kaku Gothic New
   ZenKakuGothicNew-Black.ttf — Copyright the Zen Kaku Gothic New Project Authors
   https://fonts.google.com/specimen/Zen+Kaku+Gothic+New
 
+Space Mono
+  SpaceMono-Regular.ttf, SpaceMono-Bold.ttf — Copyright the Space Mono Project Authors
+  https://fonts.google.com/specimen/Space+Mono
+
 Fonts you upload yourself are never redistributed by MaskLab: they stay in your
 browser, and are embedded only in the JSON documents you choose to save.
 
