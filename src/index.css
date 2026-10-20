@@ -11,14 +11,18 @@
 
 @font-face {
   font-family: 'Space Mono';
-  src: url('./fonts/SpaceMono-Regular.ttf') format('truetype');
+  src:
+    url('/fonts/SpaceMono-Regular.woff2') format('woff2'),
+    url('/fonts/SpaceMono-Regular.ttf') format('truetype');
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'Space Mono';
-  src: url('./fonts/SpaceMono-Bold.ttf') format('truetype');
+  src:
+    url('/fonts/SpaceMono-Bold.woff2') format('woff2'),
+    url('/fonts/SpaceMono-Bold.ttf') format('truetype');
   font-weight: 700;
   font-display: swap;
 }
@@ -31,12 +35,12 @@
   --color-line-soft: #19191e;
   --color-ink: #e5e5e5;
   --color-muted: #9a9aa4;
-  --color-faint: #62626d;
+  --color-faint: #80808b;
   /* ZuCity violet — the working accent for selection, focus, borders. */
   --color-accent: #a78bfa;
   --color-accent-dim: #6d5bd0;
   /* ZuCity red — the wordmark, and errors. Hot, so used sparingly. */
-  --color-hot: #dc2626;
+  --color-hot: #ef4444;
   /* ZuCity cyan — a sparkle, one or two places only. */
   --color-spark: #00d9ff;
 
@@ -229,7 +233,18 @@ body {
   will-change: transform;
 }
 
-.ticker:hover .ticker-track {
+/* Paused while hovered (real pointers only: a tap leaves a sticky :hover that
+   would defeat the tap toggle), while keyboard-focused, while the user has
+   tapped it to stop, and while scrolled off-screen. */
+@media (hover: hover) {
+  .ticker:hover .ticker-track {
+    animation-play-state: paused;
+  }
+}
+
+.ticker:focus-visible .ticker-track,
+.ticker[data-paused] .ticker-track,
+.ticker[data-offscreen] .ticker-track {
   animation-play-state: paused;
 }
 
@@ -240,6 +255,12 @@ body {
   to {
     transform: translateX(-50%);
   }
+}
+
+/* Below-the-fold inspector sections skip layout and paint until scrolled near. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
 }
 
 /* ---------------------------------------------------------------- motion */

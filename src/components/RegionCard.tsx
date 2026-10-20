@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { memo, useId, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import type { BlendMode, Fill, Region } from '../types';
 import { BLEND_MODES } from '../types';
@@ -11,7 +11,9 @@ interface RegionCardProps {
   fill: Fill | undefined;
 }
 
-export function RegionCard({ region, fill }: RegionCardProps) {
+/* Memoised because a drag rewrites composition.fills every frame; untouched
+   regions keep their fill object's identity, so only the dragged card re-renders. */
+export const RegionCard = memo(function RegionCard({ region, fill }: RegionCardProps) {
   const selected = useStore((s) => s.selectedId === region.id);
   const asset = useStore((s) => (fill?.assetId ? s.assets[fill.assetId] : undefined));
   const viewBox = useStore((s) => currentTemplate(s).viewBox);
@@ -124,7 +126,7 @@ export function RegionCard({ region, fill }: RegionCardProps) {
             >
               {region.name}
             </span>
-            <span className="num mt-0.5 block truncate">
+            <span className="num mt-0.5 block truncate" title={region.hint}>
               {region.hint ?? 'No hint for this region.'}
             </span>
           </span>
@@ -137,6 +139,7 @@ export function RegionCard({ region, fill }: RegionCardProps) {
           multiple={false}
           className="sr-only"
           tabIndex={-1}
+          aria-label={`Choose an image for ${region.name}`}
           onChange={onPicked}
         />
 
@@ -297,7 +300,7 @@ export function RegionCard({ region, fill }: RegionCardProps) {
       ) : null}
     </article>
   );
-}
+});
 
 function Swatch({ fill, src }: { fill: Fill | undefined; src: string | undefined }) {
   if (!fill) {

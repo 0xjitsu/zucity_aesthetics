@@ -16,12 +16,11 @@ const JOB_LABEL: Record<Job, string> = {
 };
 
 export function Toolbar() {
-  const template = useStore(currentTemplate);
-  const composition = useStore((s) => s.composition);
-  const assets = useStore((s) => s.assets);
-  const customTemplate = useStore((s) => s.customTemplate);
-  const textSpec = useStore((s) => s.textSpec);
-  const fonts = useStore((s) => s.fonts);
+  const assetCount = useStore((s) => Object.keys(s.assets).length);
+  const canUndo = useStore((s) => s.past.length > 0);
+  const canRedo = useStore((s) => s.future.length > 0);
+  const undo = useStore((s) => s.undo);
+  const redo = useStore((s) => s.redo);
   const loadFile = useStore((s) => s.loadFile);
   const resetAll = useStore((s) => s.resetAll);
   const randomize = useStore((s) => s.randomize);
@@ -46,7 +45,12 @@ export function Toolbar() {
     }
   }
 
-  const input = () => ({ template, composition, assets });
+  // Read at click time, not via subscriptions: these change on every drag frame
+  // and the render output never shows them.
+  const input = () => {
+    const s = useStore.getState();
+    return { template: currentTemplate(s), composition: s.composition, assets: s.assets };
+  };
 
   function onImportPicked(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -70,7 +74,11 @@ export function Toolbar() {
         onClick={() =>
           void run('png', async () => {
             await exportPng(input());
-            toast('ok', 'png saved \\(^o^)/', `${composition.exportSize} px, straight to your downloads`);
+            toast(
+              'ok',
+              'png saved \\(^o^)/',
+              `${useStore.getState().composition.exportSize} px, straight to your downloads`,
+            );
           })
         }
       >
@@ -112,8 +120,21 @@ export function Toolbar() {
           disabled={job !== null}
           onClick={() =>
             void run('json', () => {
-              exportJson({ ...input(), customTemplate, textSpec, fonts });
-              toast('ok', 'look saved \\(^o^)/', `${Object.keys(assets).length} textures packed inside`);
+              const { customTemplate, textSpec, fonts } = useStore.getState();
+              const doc = input();
+              exportJson({ ...doc, customTemplate, textSpec, fonts });
+              // Mirrors exportJson: only textures a fill points at are packed.
+              const used = new Set<string>();
+              for (const fill of Object.values(doc.composition.fills)) {
+                if (fill.kind === 'image' && fill.assetId && doc.assets[fill.assetId]) {
+                  used.add(fill.assetId);
+                }
+              }
+              toast(
+                'ok',
+                'look saved \\(^o^)/',
+                `${used.size} texture${used.size === 1 ? '' : 's'} packed inside`,
+              );
             })
           }
         >
@@ -136,10 +157,29 @@ export function Toolbar() {
         accept=".json,application/json"
         className="sr-only"
         tabIndex={-1}
+        aria-label="Import a MaskLab JSON file"
         onChange={onImportPicked}
       />
 
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line-soft pt-3">
+        <button
+          type="button"
+          className="btn w-full"
+          aria-label="Undo the last edit"
+          disabled={!canUndo}
+          onClick={() => undo()}
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          className="btn w-full"
+          aria-label="Redo the last undone edit"
+          disabled={!canRedo}
+          onClick={() => redo()}
+        >
+          Redo
+        </button>
         <button
           type="button"
           className="btn w-full"
@@ -159,11 +199,13 @@ export function Toolbar() {
       </div>
 
       <p className="num mt-2 leading-snug">
-        {Object.keys(assets).length === 0
+        {assetCount === 0
           ? 'No images loaded yet. Remix will shuffle colours only.'
-          : `${Object.keys(assets).length} image${
-              Object.keys(assets).length === 1 ? '' : 's'
-            } loaded and embedded on export.`}
+          : `${assetCount} image${assetCount === 1 ? '' : 's'} loaded and embedded on export.`}
+      </p>
+
+      <p className="num hidden leading-snug lg:block">
+        1–9 select · [ ] cycle · arrows nudge · R reset region · ⌘Z undo · ⇧⌘Z redo
       </p>
     </div>
   );

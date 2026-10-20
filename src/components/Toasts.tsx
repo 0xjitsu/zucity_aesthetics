@@ -14,6 +14,7 @@ export function Toasts() {
 
   return (
     <div
+      role="region"
       aria-live="polite"
       aria-label="Notifications"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col gap-2 p-4 sm:inset-x-auto sm:right-0 sm:w-[380px] sm:max-w-full"

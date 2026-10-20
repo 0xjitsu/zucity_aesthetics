@@ -52,6 +52,25 @@ export function defaultFills(template: Template): Record<RegionId, Fill> {
   return out;
 }
 
+/**
+ * Fills for `next`, carried over from the previous template by paint-order
+ * position, so switching shape (or retyping) keeps the textures already
+ * placed. Region ids differ between templates, so position is the only
+ * stable correspondence. Regions beyond the old count get their defaults.
+ */
+function carryFills(
+  previous: Region[],
+  fills: Record<RegionId, Fill>,
+  next: Template,
+): Record<RegionId, Fill> {
+  const out = defaultFills(next);
+  sortedRegions(next).forEach((region, i) => {
+    const old = previous[i] ? fills[previous[i].id] : undefined;
+    if (old) out[region.id] = { ...old, regionId: region.id };
+  });
+  return out;
+}
+
 function baseComposition(template: Template): Composition {
   return {
     templateId: template.id,
@@ -90,6 +109,8 @@ export interface MaskLabState {
   /** Snapshot current state. Call once at the start of a continuous gesture. */
   pushHistory: () => void;
   undo: () => void;
+  /** Re-apply the last undone step. Cleared by any new recorded edit. */
+  redo: () => void;
 
   setTemplate: (id: string) => void;
   setCustomTemplate: (template: Template) => void;
@@ -138,7 +159,9 @@ export const useStore = create<MaskLabState>((set, get) => {
     const s = get();
     return {
       composition: structuredClone(s.composition),
-      customTemplate: s.customTemplate ? structuredClone(s.customTemplate) : null,
+      // By reference: templates are immutable once built, and a text template
+      // can hold 500 glyph outlines that would otherwise be copied per push.
+      customTemplate: s.customTemplate,
       textSpec: s.textSpec ? structuredClone(s.textSpec) : null,
     };
   };
@@ -183,11 +206,35 @@ export const useStore = create<MaskLabState>((set, get) => {
         };
       }),
 
+    redo: () =>
+      set((s) => {
+        const next = s.future[s.future.length - 1];
+        if (!next) return s;
+        return {
+          future: s.future.slice(0, -1),
+          past: [
+            ...s.past,
+            {
+              composition: structuredClone(s.composition),
+              customTemplate: s.customTemplate,
+              textSpec: s.textSpec,
+            },
+          ].slice(-HISTORY_LIMIT),
+          composition: next.composition,
+          customTemplate: next.customTemplate,
+          textSpec: next.textSpec,
+        };
+      }),
+
     setTemplate: (id) => {
       record();
       const template = findTemplate(id, get().customTemplate);
       set((s) => ({
-        composition: { ...s.composition, templateId: template.id, fills: defaultFills(template) },
+        composition: {
+          ...s.composition,
+          templateId: template.id,
+          fills: carryFills(sortedRegions(currentTemplate(s)), s.composition.fills, template),
+        },
         selectedId: null,
         hoveredId: null,
       }));
@@ -209,17 +256,13 @@ export const useStore = create<MaskLabState>((set, get) => {
       record();
       const t: Template = { ...template, id: TEXT_TEMPLATE_ID };
       set((s) => {
-        const previous = sortedRegions(currentTemplate(s));
         const wasText = s.composition.templateId === TEXT_TEMPLATE_ID;
-        const next = defaultFills(t);
-        // Retyping should keep the look. Region ids change with the text, so
-        // carry fills across by position rather than by id.
-        if (wasText) {
-          sortedRegions(t).forEach((region, i) => {
-            const old = previous[i] ? s.composition.fills[previous[i].id] : undefined;
-            if (old) next[region.id] = { ...old, regionId: region.id };
-          });
-        }
+        // Retyping keeps the look. Arriving from a shape template does not:
+        // a word typed fresh should start in readable ink, not inherit a
+        // yin-yang's two halves letter by letter.
+        const next = wasText
+          ? carryFills(sortedRegions(currentTemplate(s)), s.composition.fills, t)
+          : defaultFills(t);
         return {
           customTemplate: t,
           textSpec: spec,

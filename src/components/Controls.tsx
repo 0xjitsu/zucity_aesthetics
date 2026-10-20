@@ -120,7 +120,13 @@ export function ToggleRow({ label, checked, onChange, hint }: ToggleRowProps) {
 /* -------------------------------------------------------------------------- */
 
 export function Controls() {
-  const composition = useStore((s) => s.composition);
+  const background = useStore((s) => s.composition.background);
+  const transparentBackground = useStore((s) => s.composition.transparentBackground);
+  const globalRotation = useStore((s) => s.composition.globalRotation);
+  const grain = useStore((s) => s.composition.grain);
+  const ringWidth = useStore((s) => s.composition.ringWidth);
+  const ringColor = useStore((s) => s.composition.ringColor);
+  const exportSize = useStore((s) => s.composition.exportSize);
   const setComposition = useStore((s) => s.setComposition);
   const pushHistory = useStore((s) => s.pushHistory);
   const viewBox = useStore((s) => currentTemplate(s).viewBox);
@@ -133,16 +139,16 @@ export function Controls() {
     <div className="flex flex-col gap-1">
       <ColorRow
         label="Background"
-        value={composition.background}
+        value={background}
         onChange={(background) => setComposition({ background }, false)}
       />
 
       <ToggleRow
         label="Transparent background on export"
-        checked={composition.transparentBackground}
+        checked={transparentBackground}
         onChange={(transparentBackground) => setComposition({ transparentBackground })}
         hint={
-          composition.transparentBackground
+          transparentBackground
             ? 'The plate is dropped; only the shape is written out.'
             : 'The background plate is written into the file.'
         }
@@ -152,7 +158,7 @@ export function Controls() {
 
       <SliderRow
         label="Global rotation"
-        value={composition.globalRotation}
+        value={globalRotation}
         min={0}
         max={360}
         step={1}
@@ -162,7 +168,7 @@ export function Controls() {
 
       <SliderRow
         label="Grain"
-        value={composition.grain}
+        value={grain}
         min={0}
         max={100}
         step={1}
@@ -174,7 +180,7 @@ export function Controls() {
 
       <SliderRow
         label="Ring width"
-        value={composition.ringWidth}
+        value={ringWidth}
         min={0}
         max={ringMax}
         step={ringMax / 240}
@@ -182,14 +188,14 @@ export function Controls() {
         onChange={(ringWidth) => setComposition({ ringWidth }, false)}
       />
 
-      {composition.ringWidth === 0 ? (
+      {ringWidth === 0 ? (
         <p className="num leading-snug">
           The ring is off. Raise the width to draw an outline around the shape.
         </p>
       ) : (
         <ColorRow
           label="Ring colour"
-          value={composition.ringColor}
+          value={ringColor}
           onChange={(ringColor) => setComposition({ ringColor }, false)}
         />
       )}
@@ -201,7 +207,7 @@ export function Controls() {
           <label htmlFor={sizeId} className="label">
             Export size
           </label>
-          <span className="num">{`${composition.exportSize} px`}</span>
+          <span className="num">{`${exportSize} px`}</span>
         </div>
         <div className="mt-2 flex items-center gap-3">
           <input
@@ -211,7 +217,7 @@ export function Controls() {
             min={600}
             max={4096}
             step={2}
-            value={composition.exportSize}
+            value={exportSize}
             onPointerDown={() => pushHistory()}
             onKeyDown={(e) => {
               if (!e.repeat && e.key.startsWith('Arrow')) pushHistory();
@@ -225,7 +231,7 @@ export function Controls() {
             min={600}
             max={4096}
             step={1}
-            value={composition.exportSize}
+            value={exportSize}
             onFocus={() => pushHistory()}
             onChange={(e) => {
               const n = Number(e.target.value);

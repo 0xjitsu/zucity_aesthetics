@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
+import type { Region } from '../types';
 import { currentTemplate, useStore } from '../store';
 import { TEMPLATES, TEXT_TEMPLATE_ID, sortedRegions } from '../templates';
 import { parseSvgToTemplate } from '../lib/svgImport';
@@ -12,7 +13,6 @@ import { Toolbar } from './Toolbar';
 export function Inspector() {
   const template = useStore(currentTemplate);
   const templateId = useStore((s) => s.composition.templateId);
-  const fills = useStore((s) => s.composition.fills);
   const customTemplate = useStore((s) => s.customTemplate);
   const textSpec = useStore((s) => s.textSpec);
   const setTemplate = useStore((s) => s.setTemplate);
@@ -131,6 +131,7 @@ export function Inspector() {
           accept=".svg,image/svg+xml"
           className="sr-only"
           tabIndex={-1}
+          aria-label="Upload an SVG shape"
           onChange={onSvgPicked}
         />
 
@@ -142,7 +143,11 @@ export function Inspector() {
       </Section>
 
       {isText ? (
-        <Section title="Text" note={textSpec ? `${textSpec.split} split` : 'not typeset'}>
+        <Section
+          className="cv-auto"
+          title="Text"
+          note={textSpec ? `${textSpec.split} split` : 'not typeset'}
+        >
           {textSpec ? (
             <TextPanel />
           ) : (
@@ -154,7 +159,12 @@ export function Inspector() {
         </Section>
       ) : null}
 
+      <Section className="cv-auto" title="Output">
+        <Toolbar />
+      </Section>
+
       <Section
+        className="cv-auto"
         title="Regions"
         note={`${regions.length} in paint order`}
         subtitle="drop an image on a region and it fills. that easy."
@@ -164,22 +174,48 @@ export function Inspector() {
             This template has no regions, so there is nothing to fill.
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {regions.map((region) => (
-              <RegionCard key={region.id} region={region} fill={fills[region.id]} />
-            ))}
-          </div>
+          <RegionList regions={regions} />
         )}
       </Section>
 
-      <Section title="Composition">
+      <Section className="cv-auto" title="Composition">
         <Controls />
       </Section>
-
-      <Section title="Output">
-        <Toolbar />
-      </Section>
     </aside>
+  );
+}
+
+const COLLAPSED_COUNT = 12;
+
+/* Owns the fills subscription so a drag re-renders this list (and, through
+   memo, only the dragged region's card) rather than the whole Inspector. */
+function RegionList({ regions }: { regions: Region[] }) {
+  const fills = useStore((s) => s.composition.fills);
+  const selectedId = useStore((s) => s.selectedId);
+  const [expanded, setExpanded] = useState(false);
+
+  const collapsible = regions.length > COLLAPSED_COUNT;
+  const shown =
+    !collapsible || expanded
+      ? regions
+      : regions.filter((r, i) => i < COLLAPSED_COUNT || r.id === selectedId);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {shown.map((region) => (
+        <RegionCard key={region.id} region={region} fill={fills[region.id]} />
+      ))}
+      {collapsible ? (
+        <button
+          type="button"
+          className="btn w-full"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? 'show fewer' : `show all ${regions.length} regions`}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -187,15 +223,17 @@ function Section({
   title,
   note,
   subtitle,
+  className = '',
   children,
 }: {
   title: string;
+  className?: string;
   note?: string;
   subtitle?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="border-b border-line px-5 py-7 last:border-b-0">
+    <section className={`border-b border-line px-5 py-7 last:border-b-0 ${className}`}>
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <h2 className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">{title}</h2>
         {note ? <span className="num truncate">{note}</span> : null}

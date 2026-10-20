@@ -1,8 +1,26 @@
-import type { Asset, Composition, Template } from '../types';
+import type { Asset, Composition, Region, Template } from '../types';
 import { sortedRegions } from '../templates';
 import { fillTransform, fitToSquare, outputSquare, ringGeometry, viewBoxOf } from './geometry';
 
 const DEG = Math.PI / 180;
+
+// Regions and templates are immutable once built, so object identity is a
+// correct cache key (an id is not: every text template is 'text'). Without
+// these a 500-glyph text template re-parses ~500 paths and re-sorts every frame.
+const paths = new WeakMap<Region, Path2D>();
+const orders = new WeakMap<Template, Region[]>();
+
+function pathOf(region: Region): Path2D {
+  let p = paths.get(region);
+  if (!p) paths.set(region, (p = new Path2D(region.d)));
+  return p;
+}
+
+function orderOf(template: Template): Region[] {
+  let o = orders.get(template);
+  if (!o) orders.set(template, (o = sortedRegions(template)));
+  return o;
+}
 
 export interface RenderInput {
   template: Template;
@@ -48,12 +66,12 @@ export function renderComposition(ctx: CanvasRenderingContext2D, input: RenderIn
     ctx.translate(-cx, -cy);
   }
 
-  for (const region of sortedRegions(template)) {
+  for (const region of orderOf(template)) {
     const fill = composition.fills[region.id];
     if (!fill) continue;
 
     ctx.save();
-    ctx.clip(new Path2D(region.d));
+    ctx.clip(pathOf(region));
     ctx.globalAlpha = fill.opacity;
     ctx.globalCompositeOperation = fill.blend;
 

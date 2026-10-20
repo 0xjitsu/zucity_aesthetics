@@ -25,9 +25,16 @@ export function useKeyboard() {
       const regions = sortedRegions(currentTemplate(state));
       const index = state.selectedId ? regions.findIndex((r) => r.id === state.selectedId) : -1;
 
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+      const key = e.key.toLowerCase();
+      if ((e.metaKey || e.ctrlKey) && key === 'z') {
         e.preventDefault();
-        state.undo();
+        if (e.shiftKey) state.redo();
+        else state.undo();
+        return;
+      }
+      if (e.ctrlKey && key === 'y') {
+        e.preventDefault();
+        state.redo();
         return;
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -70,7 +77,9 @@ export function useKeyboard() {
       const delta = nudges[e.key];
       if (delta) {
         e.preventDefault();
-        state.commitFill(state.selectedId, {
+        // A held arrow auto-repeats ~30/s; only the first press records history.
+        const apply = e.repeat ? state.updateFill : state.commitFill;
+        apply(state.selectedId, {
           offsetX: fill.offsetX + delta[0],
           offsetY: fill.offsetY + delta[1],
         });

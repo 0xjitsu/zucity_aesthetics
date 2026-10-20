@@ -117,10 +117,18 @@ export function Stage() {
   );
 
   /* ------------------------------------------------------------- gestures */
-  const gestureRef = useRef<{ id: number | null; last: [number, number]; timer: number | null }>({
+  /* `pending` = the gesture has not changed anything yet, so it has not
+     recorded history. A click that only selects must not cost an undo step. */
+  const gestureRef = useRef<{
+    id: number | null;
+    last: [number, number];
+    timer: number | null;
+    pending: boolean;
+  }>({
     id: null,
     last: [0, 0],
     timer: null,
+    pending: false,
   });
   const pinchRef = useRef<{
     dist: number;
@@ -141,7 +149,16 @@ export function Stage() {
     }, GESTURE_IDLE_MS);
   };
 
+  const recordOnce = () => {
+    const g = gestureRef.current;
+    if (!g.pending) return;
+    g.pending = false;
+    useStore.getState().pushHistory();
+  };
+
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // A second finger joins the gesture already running; it is not a new tap.
+    if (gestureRef.current.id !== null || pinchRef.current) return;
     const hit = regionAt(e.clientX, e.clientY);
     if (hit) useStore.getState().select(hit);
     const target = hit ?? selectedId;
@@ -149,11 +166,16 @@ export function Stage() {
     e.currentTarget.setPointerCapture(e.pointerId);
     gestureRef.current.id = e.pointerId;
     gestureRef.current.last = [e.clientX, e.clientY];
-    useStore.getState().pushHistory();
+    gestureRef.current.pending = true;
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const g = gestureRef.current;
+    if (pinchRef.current) {
+      // Keep the anchor fresh so the finger left after a pinch pans without a jump.
+      if (g.id === e.pointerId) g.last = [e.clientX, e.clientY];
+      return;
+    }
     if (g.id === e.pointerId && selectedId) {
       const [dx, dy] = deltaToViewBox(
         e.clientX - g.last[0],
@@ -164,7 +186,8 @@ export function Stage() {
       );
       g.last = [e.clientX, e.clientY];
       const fill = useStore.getState().composition.fills[selectedId];
-      if (fill) {
+      if (fill && (dx !== 0 || dy !== 0)) {
+        recordOnce();
         useStore
           .getState()
           .updateFill(selectedId, { offsetX: fill.offsetX + dx, offsetY: fill.offsetY + dy });
@@ -181,7 +204,6 @@ export function Stage() {
 
   const onWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     if (!selectedId) return;
-    e.preventDefault();
     beginGesture();
     const fill = useStore.getState().composition.fills[selectedId];
     if (!fill) return;
@@ -205,7 +227,8 @@ export function Stage() {
       angle: touchAngle(e.touches),
       rotation: fill.rotation,
     };
-    useStore.getState().pushHistory();
+    // Inside a pointer gesture, share its single history entry.
+    if (gestureRef.current.id === null) gestureRef.current.pending = true;
   };
 
   const onTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -217,6 +240,7 @@ export function Stage() {
     let dAngle = touchAngle(e.touches) - pinch.angle;
     if (dAngle > 180) dAngle -= 360;
     if (dAngle < -180) dAngle += 360;
+    recordOnce();
     useStore.getState().updateFill(selectedId, {
       scale: clamp(nextScale, 0.05, 20),
       rotation: pinch.rotation + dAngle,
@@ -235,6 +259,37 @@ export function Stage() {
   const onRemix = () => {
     useStore.getState().randomize();
     setRemixCount((n) => n + 1);
+  };
+
+  /* Phones have no keyboard, drag-drop or paste, so undo/redo and upload
+     live on the stage itself. */
+  const canUndo = useStore((s) => s.past.length > 0);
+  const canRedo = useStore((s) => s.future.length > 0);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const onPickPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const files = Array.from(input.files ?? []);
+    input.value = ''; // so picking the same file again still fires change
+    if (!files.length) return;
+    const state = useStore.getState();
+    const { assets: ingested, failures } = await ingestFiles(files, {
+      rasterSize: state.composition.exportSize,
+    });
+    for (const f of failures) state.toast('error', f.name, f.reason);
+    if (!ingested.length) return;
+    for (const asset of ingested) {
+      useStore.getState().addAsset(asset);
+      if (asset.animatedSource) {
+        state.toast('info', asset.name, 'GIF and WebP textures use the first frame only.');
+      }
+    }
+    useStore.getState().randomize();
+    const n = ingested.length;
+    state.toast(
+      'ok',
+      'photos added \\(^o^)/',
+      `${n} new texture${n === 1 ? '' : 's'} dealt in — tap remix for another deal`,
+    );
   };
 
   /* ------------------------------------------------------ files onto stage */
@@ -301,7 +356,7 @@ export function Stage() {
       onDragLeave={() => setDropping(false)}
     >
       <div
-        className="dotpaper flex h-[44dvh] w-full items-center justify-center p-3 sm:p-8 lg:h-auto lg:min-h-0 lg:flex-1"
+        className="dotpaper flex h-[44svh] w-full items-center justify-center p-3 sm:p-8 lg:h-auto lg:min-h-0 lg:flex-1"
       >
         <div
           ref={wrapRef}
@@ -309,6 +364,8 @@ export function Stage() {
         >
           <canvas
             ref={canvasRef}
+            role="img"
+            aria-label={`${template.name} composition, ${template.regions.length} region${template.regions.length === 1 ? '' : 's'}`}
             className="block h-full w-full touch-none"
             style={{ cursor: selectedId ? 'grab' : 'crosshair' }}
             onPointerDown={onPointerDown}
@@ -330,29 +387,78 @@ export function Stage() {
               </span>
             </div>
           ) : null}
-          {canRemix ? (
+          <div className="absolute right-2 bottom-2 z-10 flex gap-1.5 sm:right-3 sm:bottom-3">
             <button
-              key={remixCount}
               type="button"
-              onClick={onRemix}
-              className="btn btn-accent pop absolute right-2 bottom-2 z-10 sm:right-3 sm:bottom-3"
-              aria-label="Remix: deal the loaded textures into the regions afresh"
+              onClick={() => useStore.getState().undo()}
+              disabled={!canUndo}
+              className="btn min-w-11"
+              aria-label="Undo"
+              title="Undo"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4" />
-                <path d="M12.5 1v3h3M3.5 15v-3h-3" />
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <path d="M5 2.5 2 5.5l3 3" />
+                <path d="M2 5.5h7.5a4.5 4.5 0 0 1 0 9H7" />
               </svg>
-              remix
             </button>
-          ) : null}
+            <button
+              type="button"
+              onClick={() => useStore.getState().redo()}
+              disabled={!canRedo}
+              className="btn min-w-11"
+              aria-label="Redo"
+              title="Redo"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <path d="m11 2.5 3 3-3 3" />
+                <path d="M14 5.5H6.5a4.5 4.5 0 0 0 0 9H9" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              className="btn min-w-11"
+              aria-label="Add photos"
+              title="Add photos"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <path d="M8 2v12M2 8h12" />
+              </svg>
+              <span className="hidden sm:inline">add photos</span>
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              aria-label="Add photos"
+              onChange={(e) => void onPickPhotos(e)}
+            />
+            {canRemix ? (
+              <button
+                key={remixCount}
+                type="button"
+                onClick={onRemix}
+                className="btn btn-accent pop min-w-11"
+                aria-label="Remix: deal the loaded textures into the regions afresh"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  aria-hidden="true"
+                >
+                  <path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4" />
+                  <path d="M12.5 1v3h3M3.5 15v-3h-3" />
+                </svg>
+                <span className="hidden sm:inline">remix</span>
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       <Buddy />

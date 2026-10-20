@@ -163,12 +163,45 @@ async function ingestBitmap(file: File, name: string, mime: string): Promise<Ass
       width,
       height,
     };
-    if (mime === 'image/gif' || mime === 'image/webp') asset.animatedSource = true;
+    if ((mime === 'image/gif' || mime === 'image/webp') && (await isAnimated(file))) {
+      asset.animatedSource = true;
+    }
     if (downscaled) asset.downscaledFrom = [sw, sh];
     return asset;
   } finally {
     decoded.release();
   }
+}
+
+/**
+ * Only an animated file loses anything by keeping frame 1, so only an
+ * animated file gets the flag. Sniffs the first 64 KB:
+ * - WebP: a `VP8X` header with the animation bit (0x02 of the flags byte at
+ *   offset 20), or an `ANIM` chunk.
+ * - GIF: a `NETSCAPE2.0` looping extension, which every animation encoder
+ *   writes. ponytail: a looping-less multi-frame GIF reads as static; count
+ *   image descriptors if that ever matters.
+ */
+async function isAnimated(file: Blob): Promise<boolean> {
+  const bytes = new Uint8Array(await file.slice(0, 65536).arrayBuffer());
+  const ascii = (at: number, len: number) =>
+    String.fromCharCode(...bytes.subarray(at, at + len));
+  if (ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') {
+    // Only the extended (VP8X) container can carry animation at all.
+    if (ascii(12, 4) !== 'VP8X') return false;
+    return (bytes[20] & 0x02) !== 0 || indexOf(bytes, 'ANIM') !== -1;
+  }
+  if (ascii(0, 3) === 'GIF') return indexOf(bytes, 'NETSCAPE2.0') !== -1;
+  return false;
+}
+
+function indexOf(bytes: Uint8Array, needle: string): number {
+  const n = Array.from(needle, (c) => c.charCodeAt(0));
+  outer: for (let i = 0; i <= bytes.length - n.length; i++) {
+    for (let j = 0; j < n.length; j++) if (bytes[i + j] !== n[j]) continue outer;
+    return i;
+  }
+  return -1;
 }
 
 interface Decoded {

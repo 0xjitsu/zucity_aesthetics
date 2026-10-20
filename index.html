@@ -13,9 +13,25 @@
     <meta name="apple-mobile-web-app-title" content="MaskLab" />
     <meta
       name="description"
-      content="MaskLab fills each region of a vector shape with a different texture, live in the browser, and exports lossless PNG and editable SVG. Nothing leaves your machine."
+      content="MaskLab fills each region of a vector shape with its own texture, live in the browser, and exports lossless PNG and editable SVG. Nothing leaves your machine."
     />
     <title>MaskLab — one shape, many textures</title>
+    <link rel="preload" href="/fonts/SpaceMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/SpaceMono-Bold.woff2" as="font" type="font/woff2" crossorigin />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MaskLab",
+        "url": "https://zucity-aesthetics.vercel.app",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Any (web browser)",
+        "description": "MaskLab fills each region of a vector shape with its own texture, live in the browser, and exports lossless PNG and editable SVG. Nothing leaves your machine.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "isPartOf": { "@type": "WebSite", "name": "ZuCity", "url": "https://zucity.org" },
+        "creator": { "@type": "Organization", "name": "ZuCity", "url": "https://zucity.org" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

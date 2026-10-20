@@ -266,6 +266,7 @@ export function TextPanel() {
           accept=".ttf,.otf,.woff,font/*"
           className="sr-only"
           tabIndex={-1}
+          aria-label="Upload a font file"
           onChange={onFontPicked}
         />
         <button
