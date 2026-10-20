@@ -83,8 +83,10 @@ function useStarterLook() {
     });
 
     // The other three starters are remix fodder, not boot-critical; they
-    // stream in behind the first paint and simply join the deck.
-    void rest.then((assets) => {
+    // stream in behind the first paint and simply join the deck. They join
+    // only after the pair is handled: if they landed first, the pristine
+    // check above would see assets and skip dressing the visit.
+    void Promise.all([pair, rest]).then(([, assets]) => {
       assets.forEach((a) => useStore.getState().addAsset(a));
     });
   }, []);
