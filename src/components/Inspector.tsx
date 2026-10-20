@@ -1,16 +1,103 @@
-import { useRef, useState } from 'react';
-import type { ChangeEvent, ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react';
 import type { Region } from '../types';
 import { currentTemplate, useStore } from '../store';
 import { TEMPLATES, TEXT_TEMPLATE_ID, sortedRegions } from '../templates';
 import { parseSvgToTemplate } from '../lib/svgImport';
-import { BUILTIN_FONTS, buildTextTemplate, defaultTextSpec, loadFont } from '../lib/textTemplate';
+import { About } from './About';
 import { Controls } from './Controls';
 import { RegionCard } from './RegionCard';
-import { TextPanel } from './TextPanel';
 import { Toolbar } from './Toolbar';
 
-export function Inspector() {
+/* Typesetting code only loads once the text template is in use. A failed
+   chunk (offline, or a stale tab after a deploy) says so instead of
+   crashing the whole app through an unhandled lazy rejection. */
+const TextPanel = lazy(() =>
+  import('./TextPanel')
+    .then((m) => ({ default: m.TextPanel }))
+    .catch(() => ({
+      default: () => (
+        <p className="num leading-snug">
+          Could not load the text controls (x_x) — check your connection and reload. The canvas
+          still shows the last text that was typeset.
+        </p>
+      ),
+    })),
+);
+
+export type Tab = 'shape' | 'regions' | 'look' | 'export';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'shape', label: 'Shape' },
+  { id: 'regions', label: 'Regions' },
+  { id: 'look', label: 'Look' },
+  { id: 'export', label: 'Export' },
+];
+
+/* Tailwind's lg breakpoint. Phones show one tab panel; desktop stacks them. */
+const DESKTOP = '(min-width: 1024px)';
+const subscribeDesktop = (cb: () => void) => {
+  const mq = window.matchMedia(DESKTOP);
+  mq.addEventListener('change', cb);
+  return () => mq.removeEventListener('change', cb);
+};
+const isDesktop = () => window.matchMedia(DESKTOP).matches;
+
+/** Segmented tabs for phones; lives in the sticky stage wrapper in App. */
+export function InspectorTabs({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+  // Roving focus per the APG tabs pattern: arrows move and select.
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const i = TABS.findIndex((t) => t.id === tab);
+    const next =
+      e.key === 'ArrowRight'
+        ? (i + 1) % TABS.length
+        : e.key === 'ArrowLeft'
+          ? (i - 1 + TABS.length) % TABS.length
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? TABS.length - 1
+              : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    onTab(TABS[next].id);
+    document.getElementById(`tab-${TABS[next].id}`)?.focus();
+  }
+
+  return (
+    <div
+      role="tablist"
+      aria-label="Controls"
+      className="grid grid-cols-4 border-b border-line bg-panel lg:hidden"
+      onKeyDown={onKeyDown}
+    >
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          id={`tab-${t.id}`}
+          type="button"
+          role="tab"
+          aria-selected={tab === t.id}
+          aria-controls={`panel-${t.id}`}
+          tabIndex={tab === t.id ? 0 : -1}
+          className="tab"
+          onClick={() => onTab(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * `ready` is false for the first paint: the shell reserves the column (or the
+ * phone panel area) and the real controls mount in a transition right after,
+ * so React time-slices them instead of blocking the stage's first frame.
+ */
+export function Inspector({ tab, ready }: { tab: Tab; ready: boolean }) {
+  const desktop = useSyncExternalStore(subscribeDesktop, isDesktop);
+
   const template = useStore(currentTemplate);
   const templateId = useStore((s) => s.composition.templateId);
   const customTemplate = useStore((s) => s.customTemplate);
@@ -60,6 +147,9 @@ export function Inspector() {
     }
     setTypesetting(true);
     try {
+      const { BUILTIN_FONTS, buildTextTemplate, defaultTextSpec, loadFont } = await import(
+        '../lib/textTemplate'
+      );
       const spec = defaultTextSpec();
       const font =
         BUILTIN_FONTS.find((f) => f.id === spec.fontId) ?? BUILTIN_FONTS[0];
@@ -78,12 +168,8 @@ export function Inspector() {
     }
   }
 
-  return (
-    <aside
-      aria-label="Inspector"
-      id="inspector"
-      className="scroll-thin flex w-full min-w-0 shrink-0 flex-col overflow-x-hidden overflow-y-auto border-t border-line bg-panel lg:h-full lg:min-h-0 lg:w-[360px] lg:border-t-0 lg:border-l"
-    >
+  const shape = (
+    <>
       <Section title="Template" note={template.name}>
         <nav aria-label="Template picker" className="grid grid-cols-2 gap-2">
           {TEMPLATES.map((t) => (
@@ -149,7 +235,9 @@ export function Inspector() {
           note={textSpec ? `${textSpec.split} split` : 'not typeset'}
         >
           {textSpec ? (
-            <TextPanel />
+            <Suspense fallback={<p className="num leading-snug">loading the typesetter…</p>}>
+              <TextPanel />
+            </Suspense>
           ) : (
             <p className="num leading-snug">
               This template came from text, but the run that made it was not saved with it. Pick
@@ -158,29 +246,85 @@ export function Inspector() {
           )}
         </Section>
       ) : null}
+    </>
+  );
 
-      <Section className="cv-auto" title="Output">
-        <Toolbar />
-      </Section>
+  const output = (
+    <Section className="cv-auto" title="Output">
+      <Toolbar />
+    </Section>
+  );
 
-      <Section
-        className="cv-auto"
-        title="Regions"
-        note={`${regions.length} in paint order`}
-        subtitle="drop an image on a region and it fills. that easy."
-      >
-        {regions.length === 0 ? (
-          <p className="num leading-snug">
-            This template has no regions, so there is nothing to fill.
-          </p>
-        ) : (
-          <RegionList regions={regions} />
-        )}
-      </Section>
+  const regionSection = (
+    <Section
+      className="cv-auto"
+      title="Regions"
+      note={`${regions.length} in paint order`}
+      subtitle="drop an image on a region and it fills. that easy."
+    >
+      {regions.length === 0 ? (
+        <p className="num leading-snug">
+          This template has no regions, so there is nothing to fill.
+        </p>
+      ) : (
+        <RegionList regions={regions} />
+      )}
+    </Section>
+  );
 
-      <Section className="cv-auto" title="Composition">
-        <Controls />
-      </Section>
+  const look = (
+    <Section className="cv-auto" title="Composition">
+      <Controls />
+    </Section>
+  );
+
+  const about = (
+    <div className="px-5 py-7">
+      <About />
+    </div>
+  );
+
+  const panels: Record<Tab, ReactNode> = {
+    shape,
+    regions: regionSection,
+    look,
+    export: (
+      <>
+        {output}
+        {about}
+      </>
+    ),
+  };
+
+  return (
+    <aside
+      aria-label="Inspector"
+      id="inspector"
+      className="scroll-thin flex w-full min-w-0 shrink-0 flex-col overflow-x-hidden overflow-y-auto border-t border-line bg-panel max-lg:min-h-[50svh] max-lg:border-t-0 lg:h-full lg:min-h-0 lg:w-[360px] lg:border-t-0 lg:border-l"
+    >
+      {!ready ? null : desktop ? (
+        <>
+          {shape}
+          {output}
+          {regionSection}
+          {look}
+          {about}
+        </>
+      ) : (
+        // Inactive panels stay as empty shells so every tab's aria-controls
+        // resolves, without rendering their controls.
+        TABS.map((t) => (
+          <div
+            key={t.id}
+            id={`panel-${t.id}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${t.id}`}
+            hidden={t.id !== tab}
+          >
+            {t.id === tab ? panels[t.id] : null}
+          </div>
+        ))
+      )}
     </aside>
   );
 }
@@ -193,6 +337,27 @@ function RegionList({ regions }: { regions: Region[] }) {
   const fills = useStore((s) => s.composition.fills);
   const selectedId = useStore((s) => s.selectedId);
   const [expanded, setExpanded] = useState(false);
+
+  /* Bring the selected card into view — on a phone, below the sticky stage,
+     which scrollIntoView knows nothing about. Ids are untrusted, so escape. */
+  useEffect(() => {
+    if (!selectedId) return;
+    const card = document.querySelector<HTMLElement>(
+      `[data-region-card="${CSS.escape(selectedId)}"]`,
+    );
+    if (!card) return;
+    if (isDesktop()) {
+      card.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    const stage = document.querySelector('[data-sticky-stage]')?.getBoundingClientRect();
+    const r = card.getBoundingClientRect();
+    if (stage && r.top >= stage.bottom && r.bottom <= window.innerHeight) return;
+    // Once scrolled, the stage sticks at top:0, so its height is where art ends.
+    const top = stage?.height ?? 0;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollBy({ top: r.top - top - 8, behavior: still ? 'auto' : 'smooth' });
+  }, [selectedId]);
 
   const collapsible = regions.length > COLLAPSED_COUNT;
   const shown =

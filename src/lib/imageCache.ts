@@ -11,19 +11,22 @@ export function loadImage(asset: Asset): Promise<HTMLImageElement> {
   const inflight = pending.get(asset.id);
   if (inflight) return inflight;
 
-  const p = new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
+  // decode() rasterises off the main thread before the image is handed to the
+  // canvas; with plain onload, the first drawImage decodes synchronously and
+  // that lands inside the first-paint long task.
+  const img = new Image();
+  img.src = asset.dataUrl;
+  const p = img
+    .decode()
+    .then(() => {
       cache.set(asset.id, img);
       pending.delete(asset.id);
-      resolve(img);
-    };
-    img.onerror = () => {
+      return img;
+    })
+    .catch(() => {
       pending.delete(asset.id);
-      reject(new Error(`Could not decode ${asset.name}`));
-    };
-    img.src = asset.dataUrl;
-  });
+      throw new Error(`Could not decode ${asset.name}`);
+    });
   pending.set(asset.id, p);
   return p;
 }

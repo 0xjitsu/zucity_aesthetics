@@ -68,11 +68,12 @@ export function Buddy() {
   if (blinking && face === IDLE) face = BLINK;
 
   return (
-    <p className="buddy justify-center px-4 pb-4 sm:px-8">
-      <span aria-hidden="true" className={`buddy-face ${excited ? 'buddy-face-excited' : ''}`}>
+    <p className="buddy min-w-0 flex-1">
+      <span aria-hidden="true" className={`buddy-face shrink-0 ${excited ? 'buddy-face-excited' : ''}`}>
         {face}
       </span>
-      <span>{line}</span>
+      {/* One line on phones so the sticky stage never grows; desktop has room. */}
+      <span className="min-w-0 truncate lg:whitespace-normal">{line}</span>
     </p>
   );
 }

@@ -347,7 +347,7 @@ export function Stage() {
 
   return (
     <section
-      className="sticky top-0 z-20 flex flex-col border-b border-line bg-ground lg:static lg:z-auto lg:min-h-0 lg:flex-1 lg:border-b-0"
+      className="flex flex-col border-b border-line bg-ground lg:min-h-0 lg:flex-1 lg:border-b-0"
       aria-label="Composition stage"
       onDragOver={(e) => {
         e.preventDefault();
@@ -387,81 +387,84 @@ export function Stage() {
               </span>
             </div>
           ) : null}
-          <div className="absolute right-2 bottom-2 z-10 flex gap-1.5 sm:right-3 sm:bottom-3">
-            <button
-              type="button"
-              onClick={() => useStore.getState().undo()}
-              disabled={!canUndo}
-              className="btn min-w-11"
-              aria-label="Undo"
-              title="Undo"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                <path d="M5 2.5 2 5.5l3 3" />
-                <path d="M2 5.5h7.5a4.5 4.5 0 0 1 0 9H7" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => useStore.getState().redo()}
-              disabled={!canRedo}
-              className="btn min-w-11"
-              aria-label="Redo"
-              title="Redo"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                <path d="m11 2.5 3 3-3 3" />
-                <path d="M14 5.5H6.5a4.5 4.5 0 0 0 0 9H9" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => photoInputRef.current?.click()}
-              className="btn min-w-11"
-              aria-label="Add photos"
-              title="Add photos"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                <path d="M8 2v12M2 8h12" />
-              </svg>
-              <span className="hidden sm:inline">add photos</span>
-            </button>
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              aria-label="Add photos"
-              onChange={(e) => void onPickPhotos(e)}
-            />
-            {canRemix ? (
-              <button
-                key={remixCount}
-                type="button"
-                onClick={onRemix}
-                className="btn btn-accent pop min-w-11"
-                aria-label="Remix: deal the loaded textures into the regions afresh"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  aria-hidden="true"
-                >
-                  <path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4" />
-                  <path d="M12.5 1v3h3M3.5 15v-3h-3" />
-                </svg>
-                <span className="hidden sm:inline">remix</span>
-              </button>
-            ) : null}
-          </div>
         </div>
       </div>
-      <Buddy />
+      {/* Tools sit in a strip under the art, never over it. */}
+      <div className="flex items-center gap-3 px-3 pb-3 sm:px-8 sm:pb-4">
+        <Buddy />
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            type="button"
+            onClick={() => useStore.getState().undo()}
+            disabled={!canUndo}
+            className="btn min-w-11"
+            aria-label="Undo"
+            title="Undo"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path d="M5 2.5 2 5.5l3 3" />
+              <path d="M2 5.5h7.5a4.5 4.5 0 0 1 0 9H7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => useStore.getState().redo()}
+            disabled={!canRedo}
+            className="btn min-w-11"
+            aria-label="Redo"
+            title="Redo"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path d="m11 2.5 3 3-3 3" />
+              <path d="M14 5.5H6.5a4.5 4.5 0 0 0 0 9H9" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            className="btn min-w-11"
+            aria-label="Add photos"
+            title="Add photos"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path d="M8 2v12M2 8h12" />
+            </svg>
+            <span className="hidden sm:inline">add photos</span>
+          </button>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            aria-label="Add photos"
+            onChange={(e) => void onPickPhotos(e)}
+          />
+          {canRemix ? (
+            <button
+              key={remixCount}
+              type="button"
+              onClick={onRemix}
+              className="btn btn-accent pop min-w-11"
+              aria-label="Remix: deal the loaded textures into the regions afresh"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4" />
+                <path d="M12.5 1v3h3M3.5 15v-3h-3" />
+              </svg>
+              <span className="hidden sm:inline">remix</span>
+            </button>
+          ) : null}
+        </div>
+      </div>
     </section>
   );
 }

@@ -100,6 +100,7 @@ export const RegionCard = memo(function RegionCard({ region, fill }: RegionCardP
 
   return (
     <article
+      data-region-card={region.id}
       className={`sticker border ${frame}`}
       onMouseEnter={() => hover(region.id)}
       onMouseLeave={() => hover(null)}

@@ -180,6 +180,80 @@ body {
   box-shadow: 1px 1px 0 var(--color-accent-dim);
 }
 
+/* ------------------------------------------------------------ nav links */
+
+/* Header links are plain text/icons, not boxed buttons; own class because
+   .btn is unlayered and would override any utility that tried to unbox it. */
+.navlink {
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  transition: color 140ms ease;
+}
+
+.navlink:hover,
+.navlink:focus-visible {
+  color: var(--color-accent);
+}
+
+.navlink:focus-visible {
+  outline-offset: -2px;
+}
+
+.navlink-primary {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.navlink-primary:hover,
+.navlink-primary:focus-visible {
+  color: var(--color-ink);
+}
+
+/* ------------------------------------------------------------------ tabs */
+
+/* Phone inspector tabs: ZuCity's 2px violet rule marks the active one. */
+.tab {
+  touch-action: manipulation;
+  min-height: 48px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.tab:hover {
+  color: var(--color-ink);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--color-ink);
+  background: var(--color-raise);
+  border-bottom-color: var(--color-accent);
+}
+
+/* Inset, so the ring is not clipped by the neighbouring tab. */
+.tab:focus-visible {
+  outline-offset: -2px;
+}
+
 /* ---------------------------------------------------------------- sticker */
 
 /* Region cards lean like stickers on a fridge and straighten when touched.
