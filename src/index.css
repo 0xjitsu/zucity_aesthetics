@@ -331,12 +331,6 @@ body {
   }
 }
 
-/* Below-the-fold inspector sections skip layout and paint until scrolled near. */
-.cv-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 480px;
-}
-
 /* ---------------------------------------------------------------- motion */
 
 @keyframes bounce-in {

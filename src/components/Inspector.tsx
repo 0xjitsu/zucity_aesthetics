@@ -230,7 +230,6 @@ export function Inspector({ tab, ready }: { tab: Tab; ready: boolean }) {
 
       {isText ? (
         <Section
-          className="cv-auto"
           title="Text"
           note={textSpec ? `${textSpec.split} split` : 'not typeset'}
         >
@@ -250,14 +249,13 @@ export function Inspector({ tab, ready }: { tab: Tab; ready: boolean }) {
   );
 
   const output = (
-    <Section className="cv-auto" title="Output">
+    <Section title="Output">
       <Toolbar />
     </Section>
   );
 
   const regionSection = (
     <Section
-      className="cv-auto"
       title="Regions"
       note={`${regions.length} in paint order`}
       subtitle="drop an image on a region and it fills. that easy."
@@ -273,7 +271,7 @@ export function Inspector({ tab, ready }: { tab: Tab; ready: boolean }) {
   );
 
   const look = (
-    <Section className="cv-auto" title="Composition">
+    <Section title="Composition">
       <Controls />
     </Section>
   );
