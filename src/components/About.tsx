@@ -34,6 +34,12 @@ export function About() {
         <li>Built-in shapes, your own SVG, or typed text</li>
         <li>Export PNG, SVG or a JSON save file</li>
       </ul>
+      <p>
+        Questions?{' '}
+        <a href="/guide.html" className={link}>
+          Read the guide
+        </a>
+      </p>
       <ul className="flex flex-wrap gap-x-3 gap-y-1">
         {LINKS.map((l) => (
           <li key={l.href}>

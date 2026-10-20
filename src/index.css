@@ -27,22 +27,95 @@
   font-display: swap;
 }
 
+/* Palette as raw custom properties, so the theme can change at runtime.
+   Dark is the default look (ZuCity's near-black ground). Light is a
+   deliberate paper edition of the same identity, not an inversion: warm
+   off-white ground, near-black ink, the violet and red deepened until small
+   text clears WCAG AA (4.5:1) on every light surface. Contrast is recorded
+   in the theme change's report; recompute it if you touch a value here.
+   An explicit choice lands as data-theme on <html>; without one the media
+   query decides. The composition's own background is artwork, not chrome,
+   and never follows the theme. */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ground: #0a0a0a;
+  --panel: #101012;
+  --raise: #16161a;
+  --line: #232329;
+  --line-soft: #19191e;
+  --ink: #e5e5e5;
+  --muted: #9a9aa4;
+  --faint: #80808b;
+  --accent: #a78bfa;
+  --accent-dim: #6d5bd0;
+  --accent-hover: #b9a3fb;
+  --hot: #ef4444;
+  --spark: #00d9ff;
+  --checker-a: #121215;
+  --checker-b: #1a1a20;
+  --scroll-thumb: #2e2e38;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+    --ground: #f5f4f1;
+    --panel: #fbfaf8;
+    --raise: #eeede8;
+    --line: #d6d4cc;
+    --line-soft: #e5e3dc;
+    --ink: #141416;
+    --muted: #52525b;
+    --faint: #62626b;
+    --accent: #5b3fd6;
+    --accent-dim: #3a2899;
+    --accent-hover: #4a2fc4;
+    --hot: #c81e1e;
+    --spark: #00799a;
+    --checker-a: #ffffff;
+    --checker-b: #e9e8e3;
+    --scroll-thumb: #c9c7bf;
+  }
+}
+
+/* Same light values, for an explicit choice that overrides a dark OS. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --ground: #f5f4f1;
+  --panel: #fbfaf8;
+  --raise: #eeede8;
+  --line: #d6d4cc;
+  --line-soft: #e5e3dc;
+  --ink: #141416;
+  --muted: #52525b;
+  --faint: #62626b;
+  --accent: #5b3fd6;
+  --accent-dim: #3a2899;
+  --accent-hover: #4a2fc4;
+  --hot: #c81e1e;
+  --spark: #00799a;
+  --checker-a: #ffffff;
+  --checker-b: #e9e8e3;
+  --scroll-thumb: #c9c7bf;
+}
+
 @theme inline {
-  --color-ground: #0a0a0a;
-  --color-panel: #101012;
-  --color-raise: #16161a;
-  --color-line: #232329;
-  --color-line-soft: #19191e;
-  --color-ink: #e5e5e5;
-  --color-muted: #9a9aa4;
-  --color-faint: #80808b;
+  --color-ground: var(--ground);
+  --color-panel: var(--panel);
+  --color-raise: var(--raise);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
   /* ZuCity violet — the working accent for selection, focus, borders. */
-  --color-accent: #a78bfa;
-  --color-accent-dim: #6d5bd0;
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
   /* ZuCity red — the wordmark, and errors. Hot, so used sparingly. */
-  --color-hot: #ef4444;
+  --color-hot: var(--hot);
   /* ZuCity cyan — a sparkle, one or two places only. */
-  --color-spark: #00d9ff;
+  --color-spark: var(--spark);
 
   --font-sans:
     'Noto Sans JP', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial,
@@ -51,7 +124,6 @@
 }
 
 :root {
-  color-scheme: dark;
   /* Notched phones: the app draws edge to edge (viewport-fit=cover), so the
      shell pads by the safe areas instead of letting content sit under them. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -89,7 +161,7 @@ body {
   outline-offset: 2px;
 }
 
-/* Dotted grid paper, the heyclicky ground — dark. Sits on the stage side. */
+/* Dotted grid paper, the heyclicky ground. Sits on the stage side. */
 .dotpaper {
   background-image: radial-gradient(
     color-mix(in srgb, var(--color-ink) 7%, transparent) 1px,
@@ -169,8 +241,8 @@ body {
 
 .btn-accent:hover:not(:disabled) {
   color: var(--color-ground);
-  background: #b9a3fb;
-  border-color: #b9a3fb;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
   transform: rotate(0.8deg) translateY(-1px);
   box-shadow: 4px 4px 0 var(--color-accent-dim);
 }
@@ -407,12 +479,12 @@ body {
 
 /* Checkerboard under the stage, so transparency reads honestly. */
 .checkerboard {
-  background-color: #121215;
+  background-color: var(--checker-a);
   background-image:
-    linear-gradient(45deg, #1a1a20 25%, transparent 25%),
-    linear-gradient(-45deg, #1a1a20 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #1a1a20 75%),
-    linear-gradient(-45deg, transparent 75%, #1a1a20 75%);
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--checker-b) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--checker-b) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--checker-b) 75%);
   background-size: 16px 16px;
   background-position:
     0 0,
@@ -528,7 +600,7 @@ input[type='text']:hover {
 /* Scrollbars, both engines. */
 .scroll-thin {
   scrollbar-width: thin;
-  scrollbar-color: #2e2e38 transparent;
+  scrollbar-color: var(--scroll-thumb) transparent;
 }
 
 .scroll-thin::-webkit-scrollbar {
@@ -536,7 +608,7 @@ input[type='text']:hover {
 }
 
 .scroll-thin::-webkit-scrollbar-thumb {
-  background: #2e2e38;
+  background: var(--scroll-thumb);
 }
 
 .scroll-thin::-webkit-scrollbar-track {

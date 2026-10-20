@@ -13,7 +13,7 @@ if (!live.ok || (await live.text()).trim() !== key) {
 const res = await fetch('https://api.indexnow.org/indexnow', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json; charset=utf-8' },
-  body: JSON.stringify({ host, key, keyLocation, urlList: [`https://${host}/`] }),
+  body: JSON.stringify({ host, key, keyLocation, urlList: [`https://${host}/`, `https://${host}/guide.html`] }),
 });
 console.log(`IndexNow: HTTP ${res.status} ${res.statusText}`);
 if (!res.ok && res.status !== 202) process.exit(1);

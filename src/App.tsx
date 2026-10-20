@@ -4,6 +4,7 @@ import { Ticker } from './components/Ticker';
 import { Inspector, InspectorTabs } from './components/Inspector';
 import type { Tab } from './components/Inspector';
 import { Toasts } from './components/Toasts';
+import { ThemeToggle } from './components/ThemeToggle';
 import { useKeyboard } from './hooks/useKeyboard';
 import { useStore } from './store';
 import { loadStarterAssets, starterLook } from './lib/starterTextures';
@@ -143,12 +144,12 @@ export default function App() {
           end exactly where the stage ends. Desktop: a normal flex column.
           min-w-0 there so the ticker's intrinsic width cannot inflate it. */}
       <main className="contents lg:flex lg:min-h-0 lg:min-w-0 lg:flex-1 lg:flex-col">
-        <header className="flex items-center gap-3 border-b border-line px-4 sm:px-8 sm:py-1.5">
+        <header className="flex items-center gap-1.5 border-b border-line px-4 sm:gap-3 sm:px-8 sm:py-1.5">
           <h1 className="font-mono text-sm font-bold tracking-[0.3em] text-hot uppercase">
             MaskLab
           </h1>
           <p className="label hidden sm:block">one shape, many textures 一つの形、無数の質感</p>
-          <nav aria-label="ZuCity" className="-mr-2 ml-auto flex items-center">
+          <nav aria-label="ZuCity" className="ml-auto flex items-center">
             {/* New tab, so leaving for ZuCity never throws away the canvas. */}
             <a
               href="https://zucity.org"
@@ -174,6 +175,8 @@ export default function App() {
               </a>
             ))}
           </nav>
+          {/* Outside the ZuCity nav: it is a setting, not a link. */}
+          <ThemeToggle />
         </header>
         <Ticker />
         {/* Phones: stage and tabs stick together while the panel scrolls.

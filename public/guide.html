@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f4f1" media="(prefers-color-scheme: light)">
+<title>MaskLab guide by ZuCity: texture shapes and text</title>
+<meta name="description" content="How to use MaskLab, ZuCity's free browser tool: put a texture in each half of a yin-yang, fill letters with images, set vertical Japanese text and export SVG.">
+<link rel="canonical" href="https://zucity-aesthetics.vercel.app/guide.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="MaskLab by ZuCity">
+<meta property="og:title" content="MaskLab guide by ZuCity: texture shapes and text">
+<meta property="og:description" content="How to use MaskLab, ZuCity's free browser tool: put a texture in each half of a yin-yang, fill letters with images, set vertical Japanese text and export SVG.">
+<meta property="og:url" content="https://zucity-aesthetics.vercel.app/guide.html">
+<meta property="og:image" content="https://zucity-aesthetics.vercel.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A yin-yang filled with two textures beside the MaskLab by ZuCity wordmark">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@zucity_japan">
+<meta name="twitter:title" content="MaskLab guide by ZuCity: texture shapes and text">
+<meta name="twitter:description" content="How to use MaskLab, ZuCity's free browser tool: put a texture in each half of a yin-yang, fill letters with images, set vertical Japanese text and export SVG.">
+<meta name="twitter:image" content="https://zucity-aesthetics.vercel.app/og.png">
+<meta name="twitter:image:alt" content="A yin-yang filled with two textures beside the MaskLab by ZuCity wordmark">
+<!--
+  Structured data. Google shows FAQ rich results only for a few authoritative
+  sites and has retired HowTo rich results, so expect no SERP decoration from
+  these. They stay because answer engines (AI Overviews, ChatGPT search,
+  Perplexity, Bing Copilot) still read the question/answer and step structure.
+  Hard rule: every Answer "text" below must equal its visible <p> exactly, and
+  every HowToStep "text" its visible <li>. Change both together.
+  The Organization, WebSite and WebApplication nodes are defined in index.html;
+  this page references them by @id only.
+-->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "FAQPage",
+      "@id": "https://zucity-aesthetics.vercel.app/guide.html#faq",
+      "url": "https://zucity-aesthetics.vercel.app/guide.html",
+      "name": "MaskLab guide: how to texture shapes and text",
+      "inLanguage": "en",
+      "isPartOf": { "@id": "https://zucity-aesthetics.vercel.app/#website" },
+      "about": { "@id": "https://zucity-aesthetics.vercel.app/#app" },
+      "publisher": { "@id": "https://zucity.org/#org" },
+      "breadcrumb": { "@id": "https://zucity-aesthetics.vercel.app/guide.html#breadcrumb" },
+      "dateModified": "2026-10-20",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is MaskLab?",
+          "acceptedAnswer": { "@type": "Answer", "text": "MaskLab is a free browser tool, made for ZuCity, that fills each part of a shape or each letter of a word with its own image. Start from a yin-yang, split circle, triskelion or quadrant grid, upload your own SVG, or type text. It works on phones as well as desktops." }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I put a different texture in each half of a yin-yang?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Open MaskLab, which starts on a yin-yang, and drop one image on the dark half and another on the light half. Each half and each dot is its own region, with its own zoom, spin, position, flip, opacity and blend mode." }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I fill text or letters with an image?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Choose Text, type your words, and MaskLab turns each letter into its own region that you can fill with a different image. Set Split to Line or Whole to fill a whole line or the whole text with one image instead." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use vertical Japanese text?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes: choose Text, set Direction to Vertical, and pick the built-in Zen Kaku Gothic New Black font, which covers Japanese kana and kanji. Characters stack downward and columns run right to left. If the chosen font cannot draw your characters, MaskLab tells you instead of drawing empty boxes." }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I use my own shape?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Choose Custom SVG and pick an SVG file; each separate path, circle, rectangle or polygon in it becomes its own fillable region. Any SVG with separate paths will do, such as a logo, a flag or an icon." }
+        },
+        {
+          "@type": "Question",
+          "name": "What can I export, and is the SVG editable?",
+          "acceptedAnswer": { "@type": "Answer", "text": "You can export a PNG up to 4096 pixels square, an editable SVG, or a JSON save file, or copy the PNG to your clipboard. The SVG keeps one clip path per region with its image inside, so each region stays separate in a vector editor. Import JSON reopens a save file where you left off." }
+        },
+        {
+          "@type": "Question",
+          "name": "Is MaskLab free, and are my photos uploaded?",
+          "acceptedAnswer": { "@type": "Answer", "text": "MaskLab is free and runs entirely in your browser, so your photos are never uploaded. There is no account to make and no server that sees your images." }
+        },
+        {
+          "@type": "Question",
+          "name": "Who made MaskLab?",
+          "acceptedAnswer": { "@type": "Answer", "text": "MaskLab was made for ZuCity, a coliving neighborhood an hour from Tokyo in the Japanese Alps. ZuCity posts on X, Instagram and Substack." }
+        }
+      ]
+    },
+    {
+      "@type": "HowTo",
+      "@id": "https://zucity-aesthetics.vercel.app/guide.html#yin-yang",
+      "name": "How to put a different texture in each half of a yin-yang",
+      "description": "Open MaskLab, which starts on a yin-yang, and drop one image on the dark half and another on the light half. Each half and each dot is its own region, with its own zoom, spin, position, flip, opacity and blend mode.",
+      "tool": { "@id": "https://zucity-aesthetics.vercel.app/#app" },
+      "totalTime": "PT2M",
+      "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
+      "step": [
+        { "@type": "HowToStep", "position": 1, "text": "Open MaskLab. The yin-yang is the default shape." },
+        { "@type": "HowToStep", "position": 2, "text": "Drag an image onto the dark half, or open its card under Regions and choose an image." },
+        { "@type": "HowToStep", "position": 3, "text": "Do the same for the light half, and for the top and bottom dots if you like." },
+        { "@type": "HowToStep", "position": 4, "text": "Drag a half to move its image. Scroll to zoom and shift-scroll to spin; on a phone, pinch and twist." },
+        { "@type": "HowToStep", "position": 5, "text": "Choose Export PNG or Export SVG." }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://zucity-aesthetics.vercel.app/guide.html#breadcrumb",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "MaskLab", "item": "https://zucity-aesthetics.vercel.app/" },
+        { "@type": "ListItem", "position": 2, "name": "Guide", "item": "https://zucity-aesthetics.vercel.app/guide.html" }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+@font-face{font-family:'Space Mono';src:url('/fonts/SpaceMono-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Space Mono';src:url('/fonts/SpaceMono-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+:root{--bg:#0a0a0a;--ink:#e5e5e5;--muted:#a3a3ad;--line:#232329;--link:#a78bfa;--hot:#ef4444}
+@media (prefers-color-scheme:light){:root{--bg:#f5f4f1;--ink:#16151b;--muted:#4a4852;--line:#d9d6cf;--link:#5b3fd6;--hot:#c81e1e}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 'Space Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.wrap{max-width:65ch;margin:0 auto;padding:1.5rem 1rem 3rem}
+a{color:var(--link);text-decoration:underline;text-underline-offset:3px}
+a:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.skip{position:absolute;left:-999px}.skip:focus{left:1rem;top:1rem;background:var(--bg);padding:.5rem}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.mark{color:var(--hot);font-weight:700;letter-spacing:.3em;text-transform:uppercase;text-decoration:none}
+nav ol{display:flex;gap:.5rem;list-style:none;margin:0;padding:0;color:var(--muted);font-size:.875rem}
+nav li+li::before{content:"/";margin-right:.5rem}
+h1{font-size:1.5rem;line-height:1.3;margin:2rem 0 .75rem}
+h2{font-size:1.125rem;line-height:1.4;margin:2.5rem 0 .5rem}
+p,ol,ul{margin:.5rem 0}
+ol.steps{padding-left:1.5rem}ol.steps li{margin:.25rem 0}
+.lede{font-size:1.0625rem}
+.cta{display:inline-block;margin:1rem 0;padding:.75rem 1.25rem;border:1px solid var(--link);text-decoration:none;font-weight:700;min-height:44px}
+footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted)}
+footer ul{display:flex;flex-wrap:wrap;gap:.25rem 1rem;list-style:none;padding:0}
+footer a{display:inline-block;padding:.5rem 0}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the guide</a>
+<div class="wrap">
+<header>
+<a class="mark" href="/">MaskLab</a>
+<nav aria-label="Breadcrumb"><ol><li><a href="/">MaskLab</a></li><li aria-current="page">Guide</li></ol></nav>
+</header>
+<main id="main">
+<h1>MaskLab guide: how to texture shapes and text</h1>
+<p class="lede">MaskLab is a free browser tool, made for ZuCity, that fills each part of a shape or each letter of a word with its own image.</p>
+<a class="cta" href="/">Open MaskLab</a>
+
+<section aria-labelledby="q-what">
+<h2 id="q-what">What is MaskLab?</h2>
+<p>MaskLab is a free browser tool, made for ZuCity, that fills each part of a shape or each letter of a word with its own image. Start from a yin-yang, split circle, triskelion or quadrant grid, upload your own SVG, or type text. It works on phones as well as desktops.</p>
+</section>
+
+<section aria-labelledby="q-yin-yang">
+<h2 id="q-yin-yang">How do I put a different texture in each half of a yin-yang?</h2>
+<p>Open MaskLab, which starts on a yin-yang, and drop one image on the dark half and another on the light half. Each half and each dot is its own region, with its own zoom, spin, position, flip, opacity and blend mode.</p>
+<ol class="steps">
+<li>Open MaskLab. The yin-yang is the default shape.</li>
+<li>Drag an image onto the dark half, or open its card under Regions and choose an image.</li>
+<li>Do the same for the light half, and for the top and bottom dots if you like.</li>
+<li>Drag a half to move its image. Scroll to zoom and shift-scroll to spin; on a phone, pinch and twist.</li>
+<li>Choose Export PNG or Export SVG.</li>
+</ol>
+</section>
+
+<section aria-labelledby="q-text">
+<h2 id="q-text">How do I fill text or letters with an image?</h2>
+<p>Choose Text, type your words, and MaskLab turns each letter into its own region that you can fill with a different image. Set Split to Line or Whole to fill a whole line or the whole text with one image instead.</p>
+<ol class="steps">
+<li>Choose Text under the shapes (on a phone, in the Shape tab).</li>
+<li>Type in the Words box and pick a font.</li>
+<li>Press Add photos to deal your images into the letters, then Remix for a new deal.</li>
+<li>Or drop an image onto a single letter to fill just that one.</li>
+<li>Export a PNG or an SVG.</li>
+</ol>
+</section>
+
+<section aria-labelledby="q-vertical">
+<h2 id="q-vertical">Can I use vertical Japanese text?</h2>
+<p>Yes: choose Text, set Direction to Vertical, and pick the built-in Zen Kaku Gothic New Black font, which covers Japanese kana and kanji. Characters stack downward and columns run right to left. If the chosen font cannot draw your characters, MaskLab tells you instead of drawing empty boxes.</p>
+</section>
+
+<section aria-labelledby="q-own-shape">
+<h2 id="q-own-shape">How do I use my own shape?</h2>
+<p>Choose Custom SVG and pick an SVG file; each separate path, circle, rectangle or polygon in it becomes its own fillable region. Any SVG with separate paths will do, such as a logo, a flag or an icon.</p>
+<ol class="steps">
+<li>Choose Custom SVG under the shapes.</li>
+<li>Pick an .svg file from your device.</li>
+<li>Fill each region with an image, as you would a yin-yang half.</li>
+</ol>
+</section>
+
+<section aria-labelledby="q-export">
+<h2 id="q-export">What can I export, and is the SVG editable?</h2>
+<p>You can export a PNG up to 4096 pixels square, an editable SVG, or a JSON save file, or copy the PNG to your clipboard. The SVG keeps one clip path per region with its image inside, so each region stays separate in a vector editor. Import JSON reopens a save file where you left off.</p>
+</section>
+
+<section aria-labelledby="q-free">
+<h2 id="q-free">Is MaskLab free, and are my photos uploaded?</h2>
+<p>MaskLab is free and runs entirely in your browser, so your photos are never uploaded. There is no account to make and no server that sees your images.</p>
+</section>
+
+<section aria-labelledby="q-who">
+<h2 id="q-who">Who made MaskLab?</h2>
+<p>MaskLab was made for <a href="https://zucity.org">ZuCity</a>, a coliving neighborhood an hour from Tokyo in the Japanese Alps. ZuCity posts on <a href="https://x.com/zucity_japan">X</a>, <a href="https://instagram.com/zucity_japan">Instagram</a> and <a href="https://jpy2.substack.com">Substack</a>.</p>
+</section>
+
+<a class="cta" href="/">Open MaskLab</a>
+</main>
+<footer>
+<ul>
+<li><a href="/">Open MaskLab</a></li>
+<li><a href="https://zucity.org">zucity.org</a></li>
+<li><a href="https://x.com/zucity_japan">X</a></li>
+<li><a href="https://instagram.com/zucity_japan">Instagram</a></li>
+<li><a href="https://jpy2.substack.com">Substack</a></li>
+</ul>
+</footer>
+</div>
+</body>
+</html>

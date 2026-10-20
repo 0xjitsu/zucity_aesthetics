@@ -2,11 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Before any CSS: apply a stored theme and paint the right ground, so neither theme flashes. -->
+    <script>try{var t=localStorage.getItem('masklab-theme');if(t=='light'||t=='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+    <style>html{background:#0a0a0a;color-scheme:dark}@media (prefers-color-scheme:light){html:not([data-theme=dark]){background:#f5f4f1;color-scheme:light}}html[data-theme=light]{background:#f5f4f1;color-scheme:light}</style>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5f4f1" media="(prefers-color-scheme: light)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -83,8 +87,8 @@
       }
     </script>
   </head>
-  <body style="background:#0a0a0a">
-    <div id="root"><main style="max-width:40rem;margin:0 auto;padding:2rem 1rem;color:#9a9aa4;font:14px/1.6 ui-monospace,monospace"><h1 style="color:#e5e5e5;font-size:1.25rem">MaskLab — made for ZuCity</h1><p>MaskLab is a free browser tool that fills each region of a vector shape — a yin-yang by default — or each letter of typed text, including vertical Japanese, with its own texture. Use it for flags, stickers and album covers.</p><p>Made for <a href="https://zucity.org" style="color:#a78bfa">ZuCity</a>, a coliving neighborhood an hour from Tokyo in the Japanese Alps. Everything runs in your browser; nothing is uploaded.</p><ul><li>Texture fill per region, with zoom, rotate and blend</li><li>Built-in shapes, your own SVG, or typed text</li><li>Export PNG, SVG or a JSON save file</li></ul><p><a href="https://zucity.org" style="color:#a78bfa">zucity.org</a> · <a href="https://x.com/zucity_japan" style="color:#a78bfa">X</a> · <a href="https://instagram.com/zucity_japan" style="color:#a78bfa">Instagram</a> · <a href="https://jpy2.substack.com" style="color:#a78bfa">Substack</a></p></main></div>
+  <body>
+    <div id="root"><main style="max-width:40rem;margin:0 auto;padding:2rem 1rem;color:#9a9aa4;font:14px/1.6 ui-monospace,monospace"><h1 style="color:#e5e5e5;font-size:1.25rem">MaskLab — made for ZuCity</h1><p>MaskLab is a free browser tool that fills each region of a vector shape — a yin-yang by default — or each letter of typed text, including vertical Japanese, with its own texture. Use it for flags, stickers and album covers.</p><p>Made for <a href="https://zucity.org" style="color:#a78bfa">ZuCity</a>, a coliving neighborhood an hour from Tokyo in the Japanese Alps. Everything runs in your browser; nothing is uploaded.</p><ul><li>Texture fill per region, with zoom, rotate and blend</li><li>Built-in shapes, your own SVG, or typed text</li><li>Export PNG, SVG or a JSON save file</li></ul><p>Questions? <a href="/guide.html" style="color:#a78bfa">Read the guide</a></p><p><a href="https://zucity.org" style="color:#a78bfa">zucity.org</a> · <a href="https://x.com/zucity_japan" style="color:#a78bfa">X</a> · <a href="https://instagram.com/zucity_japan" style="color:#a78bfa">Instagram</a> · <a href="https://jpy2.substack.com" style="color:#a78bfa">Substack</a></p></main></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
