@@ -17,18 +17,23 @@ export function About() {
         About
       </h2>
       <p>
-        MaskLab fills each region of a vector shape (a yin-yang by default) or each letter of typed
-        text, including vertical Japanese, with its own texture. Use it for flags, stickers and album
-        covers. Export PNG, SVG or a JSON save file.
+        MaskLab is a free browser tool that fills each region of a vector shape — a yin-yang by
+        default — or each letter of typed text, including vertical Japanese, with its own texture. Use
+        it for flags, stickers and album covers.
       </p>
       <p>
         Made for{' '}
         <a href="https://zucity.org" target="_blank" rel="noopener noreferrer" className={link}>
           ZuCity
-        </a>{' '}
-        — a coliving neighborhood an hour from Tokyo. Everything runs in your browser; nothing is
-        uploaded.
+        </a>
+        , a coliving neighborhood an hour from Tokyo in the Japanese Alps. Everything runs in your
+        browser; nothing is uploaded.
       </p>
+      <ul className="list-disc space-y-0.5 pl-4">
+        <li>Texture fill per region, with zoom, rotate and blend</li>
+        <li>Built-in shapes, your own SVG, or typed text</li>
+        <li>Export PNG, SVG or a JSON save file</li>
+      </ul>
       <ul className="flex flex-wrap gap-x-3 gap-y-1">
         {LINKS.map((l) => (
           <li key={l.href}>
