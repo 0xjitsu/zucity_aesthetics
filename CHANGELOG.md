@@ -6,6 +6,8 @@ All notable changes to MaskLab. The format follows [Keep a Changelog](https://ke
 
 ### Added
 
+- **Light and dark themes.** A button at the right end of the header cycles System → Light → Dark. System follows the device live; Light and Dark are remembered in this browser (`masklab-theme`). The browser bar colour follows the theme, and the right background paints before the CSS loads, so neither theme flashes. Every text colour meets 4.5:1 contrast in both themes. Canvas selection outlines look the same in both on purpose. See [docs/architecture.md](docs/architecture.md).
+- **A guide page for answer engines.** `/guide.html` is static HTML (no JavaScript) that answers eight common questions with numbered steps, and carries FAQPage, HowTo and BreadcrumbList data tied to the main page's ZuCity, site and app entries. About and the crawler fallback now say "Questions? Read the guide" and link to it, and the sitemap lists both pages. See the AEO section of [docs/seo.md](docs/seo.md).
 - **Redo.** `⇧⌘Z`, `Ctrl+Shift+Z` and `Ctrl+Y` redo the last undone step. Undo and Redo buttons sit in the strip under the canvas and in the Output section.
 - **Add photos** button under the canvas. Pick images and they join the texture deck and are dealt into the shape straight away. This is the upload path on phones, which have no drag-drop or paste.
 - On desktop, a one-line shortcuts reminder at the bottom of Output.
@@ -18,6 +20,8 @@ All notable changes to MaskLab. The format follows [Keep a Changelog](https://ke
 
 ### Changed
 
+- `scripts/indexnow.mjs` now submits two URLs, the app and `/guide.html`.
+- **Corrected performance note.** AGENTS.md had said Lighthouse overstated blocking time. That was wrong: the harness used to check it never applied its 4× CPU slowdown. Measured properly on 20 Oct 2026 (five cold mobile loads, real 4× slowdown): median blocking 158 ms, longest freeze 208 ms, largest paint about 700 ms, close to Lighthouse. AGENTS.md now points at the harness, `real-perf.mjs`, and its pass limits.
 - **Switching template keeps your textures.** Fills carry over by paint-order position. Arriving at Text from a shape still starts fresh in ink; retyping keeps the look.
 - **Undo history is recorded on the first move that changes something,** not on pointer-down. A click that only selects records nothing and keeps the redo stack. One held arrow key is one undo step. A pinch is one undo step, and a second finger never changes the selection.
 - The ticker pauses on keyboard focus, on tap, and while scrolled off-screen, as well as on hover (now real pointers only).

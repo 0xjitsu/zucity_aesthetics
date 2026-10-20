@@ -13,7 +13,7 @@ Fill each region of a vector shape — or each letter of a word you type — wit
 [![React 19](https://img.shields.io/badge/React_19-1f1f26?style=flat-square&logo=react&logoColor=61dafb)](https://react.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ff3b14?style=flat-square)](#contributing)
 
-[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Architecture](docs/architecture.md) · [Search & AI visibility](docs/seo.md) · [For Agents](AGENTS.md) · [Changelog](CHANGELOG.md) · [Live app](https://zucity-aesthetics.vercel.app)
+[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Architecture](docs/architecture.md) · [Search & AI visibility](docs/seo.md) · [For Agents](AGENTS.md) · [Changelog](CHANGELOG.md) · [Live app](https://zucity-aesthetics.vercel.app) · [Guide](https://zucity-aesthetics.vercel.app/guide.html)
 
 </div>
 
@@ -81,7 +81,9 @@ Shortcuts go inert while a form control has focus, so typing into the text box n
 - **Installable, phone-first** — a PWA manifest and icons for the home screen. On a phone the controls become four tabs under the canvas (Shape, Regions, Look, Export), the canvas and tabs stay pinned while the open tab scrolls, and tapping a region on the canvas opens Regions at its card.
 - **Tools under the art** — Undo, Redo, Add photos and Remix sit in a strip under the canvas, never on top of the artwork.
 - **Fast first paint** — the canvas draws first and the controls follow; the text typesetter loads only when you press Text.
+- **Light and dark themes** — a button at the right end of the header cycles System → Light → Dark. System follows your device live; Light and Dark are remembered in this browser. Dark is the default look.
 - **Made for [ZuCity](https://zucity.org)** — the header links to zucity.org, then X, Instagram and Substack, each in a new tab so the canvas is never lost. An About section says the same, and the page is set up for search and AI assistants ([docs/seo.md](docs/seo.md)).
+- **A plain-text guide** — [`/guide.html`](https://zucity-aesthetics.vercel.app/guide.html) answers eight common questions with numbered steps, as static HTML that needs no JavaScript. It is written for people and for answer engines ([docs/seo.md](docs/seo.md#aeo-answer-engine-optimisation)).
 
 ## How It Works
 
@@ -148,9 +150,9 @@ export const myShape: Template = {
 
 ```
 index.html                Meta, Open Graph, PWA links, font preloads, JSON-LD,
-                          crawlable fallback HTML in #root
+                          theme boot script and style, crawlable fallback HTML in #root
 vercel.json               Cache-Control headers
-scripts/indexnow.mjs      IndexNow ping, run after each production deploy
+scripts/indexnow.mjs      IndexNow ping (app + guide), run after each production deploy
 src/
   App.tsx                 Layout shell, ZuCity links, phone tabs state,
                           first-visit starter look
@@ -172,13 +174,15 @@ src/
   templates/              One file per built-in shape, plus the registry
   components/             Stage (canvas, hit-testing, gestures, tool strip),
                           Inspector (+ phone tabs), TextPanel (lazy), RegionCard,
-                          Controls, Toolbar, About, Toasts, Ticker, Buddy
+                          Controls, Toolbar, About, Toasts, Ticker, Buddy,
+                          ThemeToggle (System / Light / Dark)
   hooks/useKeyboard.ts    Global shortcuts
 public/fonts/             Bundled typefaces + LICENSE.txt (SIL OFL 1.1)
 public/textures/          Five starter textures (WebP)
 public/manifest.webmanifest  PWA manifest (+ icons alongside)
 public/og.png             1200 × 630 social preview image
-public/robots.txt, sitemap.xml  Crawler rules and the one-URL sitemap
+public/guide.html         Static, no-JS answer page at /guide.html (FAQ + steps + JSON-LD)
+public/robots.txt, sitemap.xml  Crawler rules and the two-URL sitemap (app + guide)
 public/<32 hex>.txt       IndexNow key file; keep it
 ```
 
@@ -217,7 +221,7 @@ Any static host. For Vercel:
 npx vercel --prod
 ```
 
-Framework preset: Vite. Build command `npm run build`, output directory `dist`. `vercel.json` sets cache headers only: hashed `/assets/*` immutable for a year, fonts and textures 30 days, icons, manifest, `og.png`, `robots.txt`, `sitemap.xml` and the IndexNow key one day. After each production deploy, run `node scripts/indexnow.mjs` so Bing and other IndexNow engines pick up the change ([docs/seo.md](docs/seo.md)). Live at [zucity-aesthetics.vercel.app](https://zucity-aesthetics.vercel.app).
+Framework preset: Vite. Build command `npm run build`, output directory `dist`. `vercel.json` sets cache headers only: hashed `/assets/*` immutable for a year, fonts and textures 30 days, icons, manifest, `og.png`, `robots.txt`, `sitemap.xml` and the IndexNow key one day. After each production deploy, run `node scripts/indexnow.mjs` so Bing and other IndexNow engines pick up the app and the guide ([docs/seo.md](docs/seo.md)). Live at [zucity-aesthetics.vercel.app](https://zucity-aesthetics.vercel.app).
 
 ## Tech Stack
 
@@ -265,6 +269,6 @@ The OFL permits redistribution, bundling, and embedding, including in a commerci
 
 **One shape. Many textures.**
 
-[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Search & AI visibility](docs/seo.md) · [Report a Bug](https://github.com/0xjitsu/zucity_aesthetics/issues/new) · [Request a Feature](https://github.com/0xjitsu/zucity_aesthetics/issues/new)
+[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Search & AI visibility](docs/seo.md) · [Guide](https://zucity-aesthetics.vercel.app/guide.html) · [Report a Bug](https://github.com/0xjitsu/zucity_aesthetics/issues/new) · [Request a Feature](https://github.com/0xjitsu/zucity_aesthetics/issues/new)
 
 </div>

@@ -8,7 +8,7 @@ MaskLab is a client-only React + TypeScript app that fills the individual region
 
 There is no backend, no router, no test suite, and no environment configuration.
 
-**There is no `llms.txt`, on purpose.** No search engine or AI crawler consumes it, so it is not shipped; do not re-add it. Agent-readiness comes from this file, semantic HTML with correct accessible names, the JSON-LD `@graph` in `index.html`, and the crawlable HTML inside `#root`. Search and AI visibility, and the rules for changing site copy, are in [docs/seo.md](docs/seo.md).
+**There is no `llms.txt`, on purpose.** No search engine or AI crawler consumes it, so it is not shipped; do not re-add it. Agent-readiness comes from this file, semantic HTML with correct accessible names, the JSON-LD `@graph` in `index.html`, and the crawlable HTML inside `#root`. Search and AI visibility (including the static `public/guide.html` answer page), and the rules for changing site copy, are in [docs/seo.md](docs/seo.md).
 
 ---
 
@@ -145,26 +145,29 @@ Drop the file in `public/fonts/` and add an entry to `BUILTIN_FONTS` in `src/lib
 
 The words about MaskLab live in two places that must say the same thing: the fallback HTML inside `<div id="root">` in `index.html` (what crawlers that do not run JavaScript read) and `src/components/About.tsx` (what people see). Change both in the same commit. Title and description rules, and what to update when the domain changes, are in [docs/seo.md](docs/seo.md).
 
+`public/guide.html` repeats its answers in JSON-LD (FAQPage and HowTo). **Each structured-data answer must match its visible text word for word.** To change an answer, change the visible `<p>` or `<li>` and its JSON-LD twin in the same commit. Never edit one alone.
+
 ---
 
 ## File map
 
 | File | What it owns |
 |---|---|
-| `index.html` | Title, description, canonical, Open Graph and Twitter tags, PWA and icon links, Space Mono `woff2` preloads, the JSON-LD `@graph` (Organization, WebSite, WebApplication), and the crawlable fallback HTML inside `#root` that must match `About.tsx` (see [docs/seo.md](docs/seo.md)) |
+| `index.html` | Title, description, canonical, Open Graph and Twitter tags, PWA and icon links, Space Mono `woff2` preloads, the JSON-LD `@graph` (Organization, WebSite, WebApplication), the crawlable fallback HTML inside `#root` that must match `About.tsx` (see [docs/seo.md](docs/seo.md)), and the theme boot code in `<head>`: an inline script that applies the stored `masklab-theme` choice and an inline `<style>` that paints the `<html>` background for the right theme before the CSS loads. `<body>` carries no inline background, on purpose |
 | `vercel.json` | Cache-Control headers only (see "Caching" below) |
 | `public/manifest.webmanifest` | PWA manifest: standalone display, icons. No service worker, on purpose |
 | `public/og.png` | 1200 × 630 social preview image named by `og:image` and `twitter:image`. A static asset; no script in the repo generates it |
 | `public/robots.txt` | Allows all crawlers, names the search and AI crawlers explicitly, and points at the sitemap |
-| `public/sitemap.xml` | One URL (the root) with a hand-written `lastmod` |
+| `public/sitemap.xml` | Two URLs (the root and `/guide.html`), each with a hand-written `lastmod` |
+| `public/guide.html` | Static, no-JavaScript answer page at `/guide.html`: eight question headings, numbered steps for the how-tos, and JSON-LD (FAQPage, HowTo, BreadcrumbList) that points at the `@id`s in `index.html`. Visible text and JSON-LD must match word for word. Follows the OS light/dark setting only; it has no toggle |
 | `public/3e7a11ffb764d796ce88a0d7894582cf.txt` | IndexNow key file. Its name and contents are the key in `scripts/indexnow.mjs`; never delete or rename it |
-| `scripts/indexnow.mjs` | Pings IndexNow with the root URL. Run `node scripts/indexnow.mjs` after every production deploy; it refuses to run until the key file is live |
+| `scripts/indexnow.mjs` | Pings IndexNow with the root URL and `/guide.html`. Run `node scripts/indexnow.mjs` after every production deploy; it refuses to run until the key file is live |
 | `docs/seo.md` | What ships for search and AI visibility, owner-only off-site actions, and agent rules for changing copy |
 | `public/textures/` | Five bundled starter textures (`.webp`) that dress the first visit |
 | `public/fonts/` | Bundled OFL fonts, `.ttf` for the typesetter plus `woff2` copies of Space Mono for the UI, and `LICENSE.txt` |
 | `src/main.tsx` | React root, `StrictMode` mount |
-| `src/App.tsx` | Layout shell, header with the zucity.org and social links (X → Instagram → Substack), skip link, the first-visit starter look, the phone tab state and the selection→Regions subscription, the `ready` flag that mounts the inspector in a transition, the sticky `data-sticky-stage` wrapper around Stage and `InspectorTabs`, installs keyboard hook |
-| `src/index.css` | Tailwind v4 theme tokens, `@font-face`, and the unlayered `.btn` / `.navlink` / `.tab` / `.label` / `.num` / `.panel` / `.checkerboard` / `.ticker` classes |
+| `src/App.tsx` | Layout shell, header with the zucity.org and social links (X → Instagram → Substack) and the theme toggle, skip link, the first-visit starter look, the phone tab state and the selection→Regions subscription, the `ready` flag that mounts the inspector in a transition, the sticky `data-sticky-stage` wrapper around Stage and `InspectorTabs`, installs keyboard hook |
+| `src/index.css` | The colour tokens as raw CSS variables (dark on `:root`, light under `prefers-color-scheme` and `[data-theme='light']`), the `@theme inline` block that points Tailwind at them, `@font-face`, and the unlayered `.btn` / `.navlink` / `.tab` / `.label` / `.num` / `.panel` / `.checkerboard` / `.ticker` classes |
 | `src/types.ts` | The whole data model: `Region`, `Template`, `Fill`, `Asset`, `Composition`, `TextSpec`, `FontAsset`, `MaskLabFile`, `BLEND_MODES` |
 | `src/opentype-js.d.ts` | Ambient declarations for opentype.js v2 — the package ships no types and the DefinitelyTyped package describes the 1.x API. Must stay a standalone `.d.ts`: a `declare module` inside a file that has its own imports is treated as module *augmentation*, not an ambient declaration, and would not satisfy the import. |
 | `src/store.ts` | Zustand state, 30-step undo and redo, the gesture/history contract, `carryFills()` (fills follow paint-order position across a template switch), `randomize()` (Remix), toasts, dev-only `window.__masklab` |
@@ -184,6 +187,7 @@ The words about MaskLab live in two places that must say the same thing: the fal
 | `src/templates/splitCircle.ts` | 2 regions, the minimal case |
 | `src/templates/triskelion.ts` | 6 regions, arcs generated programmatically |
 | `src/templates/quadrantGrid.ts` | 4 regions, deliberately plain |
+| `src/components/ThemeToggle.tsx` | Three-state header button (System → Light → Dark). Owns the `masklab-theme` localStorage key, sets or clears `data-theme` on `<html>`, and copies the live `--ground` into the `theme-color` metas |
 | `src/components/Stage.tsx` | Canvas element, sizing, drawing, selection outlines, `isPointInPath` hit-testing, drag/wheel/pinch-and-twist gestures, drop and paste, and the tool strip under the art (Buddy hint plus Undo / Redo / Add photos / Remix) |
 | `src/components/Buddy.tsx` | Kaomoji companion in the stage's tool strip; pointer-aware gesture hints, one truncated line on phones |
 | `src/components/Ticker.tsx` | Scrolling "Tips" strip that reads live state; pauses on hover, keyboard focus, tap, and off-screen |
@@ -220,7 +224,7 @@ window.__masklab.getState().setTemplate('triskelion');
 window.__masklab.getState().composition.fills;
 ```
 
-**Performance: measure real long tasks before optimising.** Lighthouse simulates CPU throttling, and on this app it overstated total blocking time by about 3.5× compared with long tasks measured under real DevTools CPU throttling. Record a throttled performance trace (or a `PerformanceObserver` on `longtask`) and optimise what it shows, not the Lighthouse score.
+**Performance: measure with the real-throttle harness, not by eye.** Run `node ~/Developer/jitsu-os/scripts/real-perf.mjs https://zucity-aesthetics.vercel.app/`. It applies a real 4× CPU slowdown, starts a fresh Chrome per run, proves its own slowdown took effect, and fails on any of: blocking time over 200 ms, longest freeze over 300 ms, any same-origin 404, any failed font. Measured 20 Oct 2026 on five cold mobile loads: median blocking 158 ms, longest freeze 208 ms, largest paint about 700 ms. That is close to Lighthouse, so Lighthouse's numbers for this app are roughly right. The one remaining long task is about 55 ms unthrottled, at boot. (An earlier note here claimed Lighthouse overstated blocking time several times over. That was wrong: the harness used to check it never applied its 4× slowdown. Do not repeat it.)
 
 The high-value checks are the ones that measure pixels rather than read code: render a composition to a canvas, export the same composition to SVG, rasterise both at the same size, and compare ink bounding boxes. That is how the defects below were found, and how the ones in `git log` were found before them — the commit bodies are worth reading, since several document a bug and the reasoning that fixed it.
 
@@ -258,4 +262,5 @@ Left recorded because the reasoning is reusable, and because each was found by m
 - **Heavy below-the-fold UI goes inside the inspector's transition.** `App` mounts the inspector only after `ready` flips in `startTransition`, scheduled by `requestAnimationFrame` *and* a 120 ms `setTimeout`. Keep the timeout: background tabs never fire rAF, and without it a page opened in a background tab shows empty controls until it is focused. New heavy UI belongs inside `Inspector` (or another component behind `ready`), not rendered beside `Stage` in the first paint.
 - **Phones render only the active tab panel.** Inactive `role="tabpanel"` shells stay in the DOM, `hidden` and empty, so `aria-controls` resolves. A component in an inactive tab is unmounted, so it must not hold state the user expects to survive a tab switch; keep such state in the store.
 - **`content-visibility` with an intrinsic-size estimate caused layout shift here; prefer not rendering hidden panels.** A `.cv-auto` class (`content-visibility: auto; contain-intrinsic-size: auto 480px`) was tried on inspector sections and removed: sections snapped from 480 px to their real height and pushed About down, a 0.062 desktop layout shift.
+- **Themes: every colour is a token defined in both themes.** The palette is raw CSS variables in `index.css`, dark on `:root`, light under `@media (prefers-color-scheme: light)` (skipped when dark is pinned with `[data-theme='dark']`) and under `[data-theme='light']`. A new colour must be added as a variable in **all three** blocks and exposed through `@theme inline`. Never hard-code a hex in a component. Never put an inline `background` on `<body>`: an inline style beats the CSS, and it once kept the body dark in the light theme. The storage key `masklab-theme` appears twice, in `ThemeToggle.tsx` and in the inline script in the `<head>` of `index.html`, and the two hex values in the inline `<style>` beside it must match `--ground` in each theme; change them together. Canvas selection outlines are the same in both themes on purpose, because they are drawn on the artwork, which does not change with the theme. Every text token must stay at 4.5:1 or better in both themes; recompute if you touch one.
 - **Selection drives the phone tab.** `App` subscribes to the store and switches to Regions when `selectedId` changes to a new value. Anything that sets `selectedId` (canvas, keys, cards) therefore opens Regions on a phone. Do not move this into a component that subscribes to `selectedId` through a hook, or `App` re-renders on every selection.

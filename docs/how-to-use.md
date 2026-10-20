@@ -23,6 +23,10 @@ Tap a region on the canvas and the **Regions** tab opens with that region's card
 
 The header links to zucity.org, then ZuCity on X, Instagram and Substack, each in a new tab so the canvas is never lost.
 
+The button at the right end of the header sets the **theme**. Each press moves one step along System → Light → Dark → System. **System** follows your device and changes with it. **Light** and **Dark** stay put, and your choice is remembered in this browser. The artwork itself never changes with the theme, and neither do the selection outlines on the canvas.
+
+Short on time? The [guide](https://zucity-aesthetics.vercel.app/guide.html) answers the eight most common questions on one page. The About section links to it as "Read the guide".
+
 The canvas opens already dressed in two of the bundled ZuCity textures, a different pair on each visit. Treat it as a starting point: undo will not step back to a blank shape.
 
 You can install MaskLab to your home screen from your browser's share or install menu; it opens full-screen like an app.

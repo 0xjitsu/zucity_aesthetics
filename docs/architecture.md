@@ -246,6 +246,40 @@ The tabs follow the APG tabs pattern: `role="tablist"` with roving `tabIndex`, a
 
 Selecting a region opens the Regions tab. `App` subscribes to the store directly (`useStore.subscribe`) and calls `setTab('regions')` whenever `selectedId` changes to a new value, so selection itself never re-renders `App`. `RegionList` then brings the selected card (`data-region-card`, looked up with `CSS.escape` because ids come from user files) into view. On desktop that is `scrollIntoView({ block: 'nearest' })`. On a phone `scrollIntoView` would park the card under the sticky stage, so it measures the `data-sticky-stage` wrapper, does nothing if the card is already visible below it, and otherwise scrolls the window by the difference, smoothly unless reduced motion is set.
 
+### Light and dark themes
+
+Colours are raw CSS variables in `src/index.css`, not Tailwind literals, so the palette can change at runtime. `@theme inline` maps each Tailwind colour (`--color-ground`, `--color-ink`, …) to its variable.
+
+| Block | Applies when |
+|---|---|
+| `:root`, `:root[data-theme='dark']` | The default, and when dark is pinned |
+| `@media (prefers-color-scheme: light) { :root:not([data-theme='dark']) }` | The OS is light and the user has not pinned dark |
+| `:root[data-theme='light']` | Light is pinned, including on a dark OS |
+
+`ThemeToggle.tsx` in the header is a three-state button: System → Light → Dark. System is the absence of a stored choice and of `data-theme`, so the media query decides and follows the OS live. Light and Dark set `data-theme` on `<html>` and store the choice in `localStorage` under `masklab-theme`. Storage access is wrapped in `try`, because private mode can throw, so a choice that cannot be saved still holds for the page.
+
+Two things in `index.html` keep the first paint right, before any CSS loads:
+
+- A tiny inline script in `<head>` reads `masklab-theme` and sets `data-theme`.
+- An inline `<style>` paints the `<html>` background and `color-scheme` for the right theme.
+
+`<body>` has no inline background on purpose. An inline style beats the stylesheet, and it once kept the body dark in the light theme.
+
+The page also carries two `theme-color` metas, one per `prefers-color-scheme`. `ThemeToggle` copies the live `--ground` into both on mount, on each change, and when the OS flips, so the browser bar matches whichever palette is showing.
+
+The light palette is a paper edition of the same identity, not an inversion:
+
+| Token | Light | Token | Light |
+|---|---|---|---|
+| ground | `#f5f4f1` | muted | `#52525b` |
+| panel | `#fbfaf8` | faint | `#62626b` |
+| raise | `#eeede8` | accent | `#5b3fd6` |
+| ink | `#141416` | hot | `#c81e1e` |
+
+Every text token meets WCAG AA (4.5:1) in both themes. The lowest is about 4.6:1: the faint label on the raised and accent surfaces in dark.
+
+Canvas selection outlines are the same in both themes. They are drawn on the artwork, which does not change with the theme, so they must stay visible against it, not against the page. The static `public/guide.html` is separate: it carries its own small palette and follows the OS setting only.
+
 ### Header links
 
 The header's zucity.org and social links (X, Instagram, Substack, in that order) use `.navlink`, a small class in `index.css` for plain text and icon links with a 44 px target. They used `.btn` before, and because `.btn` is unlayered CSS the Tailwind utilities meant to unbox it were ignored, so they rendered as boxed grey buttons.
@@ -262,7 +296,7 @@ Below-the-fold inspector sections used to carry `content-visibility: auto` with 
 
 ### Accessibility notes
 
-The canvas is `role="img"` with a label naming the template and its region count. The ticker is a focusable "Tips" region that pauses on hover (real pointers only), keyboard focus, a tap, and whenever it is scrolled off-screen. The toast stack is a labelled `role="region"` with `aria-live="polite"`. Hidden file inputs carry labels. The `--color-faint` (#80808b) and `--color-hot` (#ef4444) tokens meet 4.5:1 on the ground, panel and raise surfaces (lowest: 4.62, faint on raise).
+The canvas is `role="img"` with a label naming the template and its region count. The ticker is a focusable "Tips" region that pauses on hover (real pointers only), keyboard focus, a tap, and whenever it is scrolled off-screen. The toast stack is a labelled `role="region"` with `aria-live="polite"`. Hidden file inputs carry labels. In the dark theme the `--color-faint` (#80808b) and `--color-hot` (#ef4444) tokens meet 4.5:1 on the ground, panel and raise surfaces (lowest: 4.62, faint on raise). The light theme is held to the same bar; see "Light and dark themes" above.
 
 ---
 
@@ -311,4 +345,4 @@ Only fingerprinted files may be immutable. There is a PWA manifest and icons for
 - **No backend.** No account, no upload, no telemetry. Every byte stays in the tab.
 - **No canvas or image-processing library.** The render maths is in the repository, readable, and about two hundred lines.
 - **No test suite.** Verification is done by driving the running app and measuring output — including the measurements in this document. A dev-only `window.__masklab` handle exposes the store so the app can be driven from a console or automation tool; it is stripped from production builds.
-- **No persistence.** No autosave, no local storage. A refresh loses the composition; the JSON export is the save file.
+- **No persistence of your work.** No autosave. A refresh loses the composition; the JSON export is the save file. The one thing stored in the browser is the theme choice (`masklab-theme` in `localStorage`).
