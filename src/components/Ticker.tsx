@@ -63,7 +63,7 @@ export function Ticker() {
       data-paused={paused || undefined}
       data-offscreen={offscreen || undefined}
       onClick={() => setPaused((p) => !p)}
-      className="ticker py-1.5 font-mono text-[11px] tracking-[0.08em] text-muted"
+      className="ticker py-1.5 font-mono text-[12px] tracking-[0.08em] text-muted"
     >
       <div className="ticker-track">
         <span className="inline-flex items-center">{run}</span>
