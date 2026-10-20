@@ -20,6 +20,7 @@ All notable changes to MaskLab. The format follows [Keep a Changelog](https://ke
 
 ### Changed
 
+- **Boot no longer freezes the page for font lookups.** The one long task at boot was the first layout searching system fonts, character by character, for the ticker's Japanese and the kaomoji (~50 ms unthrottled, ~300 ms on a 4× slowed phone). The font stacks now name Hiragino Sans and Noto Sans CJK JP, so those characters resolve directly. Local production build, real 4× slowdown, five cold mobile loads, two rounds back to back (load 170–200): median blocking 360 / 341 ms → 121 / 87 ms, longest freeze 308 / 332 ms → 99 / 81 ms. The only visible change: two Han characters in the ticker (文字) now draw in Hiragino Sans, the same Japanese font as the kana beside them, instead of the Chinese PingFang SC.
 - `scripts/indexnow.mjs` now submits two URLs, the app and `/guide.html`.
 - **Corrected performance note.** AGENTS.md had said Lighthouse overstated blocking time. That was wrong: the harness used to check it never applied its 4× CPU slowdown. Measured properly on 20 Oct 2026 (five cold mobile loads, real 4× slowdown): median blocking 158 ms, longest freeze 208 ms, largest paint about 700 ms, close to Lighthouse. AGENTS.md now points at the harness, `real-perf.mjs`, and its pass limits.
 - **Switching template keeps your textures.** Fills carry over by paint-order position. Arriving at Text from a shape still starts fresh in ink; retyping keeps the look.

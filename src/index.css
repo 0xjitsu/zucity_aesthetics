@@ -117,10 +117,16 @@
   /* ZuCity cyan — a sparkle, one or two places only. */
   --color-spark: var(--spark);
 
+  /* Hiragino Sans (Apple) and Noto Sans CJK JP (Android) are named so the
+     Japanese in the ticker and kaomoji resolve from the list. Left to the
+     browser's per-character font fallback, the first layout spent ~55 ms
+     searching system fonts: the boot's one long task (4x that on a phone). */
   --font-sans:
     'Noto Sans JP', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial,
-    sans-serif;
-  --font-mono: 'Space Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    'Hiragino Sans', 'Noto Sans CJK JP', sans-serif;
+  --font-mono:
+    'Space Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, 'Hiragino Sans',
+    'Noto Sans CJK JP', monospace;
 }
 
 :root {
