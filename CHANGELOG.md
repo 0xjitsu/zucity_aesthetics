@@ -6,6 +6,7 @@ All notable changes to MaskLab. The format follows [Keep a Changelog](https://ke
 
 ### Added
 
+- **README with screenshots, GIFs and a walkthrough video.** Light and dark hero (it follows the reader's GitHub theme), phone screenshots, Remix / drag / phone GIFs, a text-mode shot and a 24-second MP4, all in `docs/media/`. New sections for quick start, how it works (Mermaid diagram) and AI agents.
 - **Light and dark themes.** A button at the right end of the header cycles System → Light → Dark. System follows the device live; Light and Dark are remembered in this browser (`masklab-theme`). The browser bar colour follows the theme, and the right background paints before the CSS loads, so neither theme flashes. Every text colour meets 4.5:1 contrast in both themes. Canvas selection outlines look the same in both on purpose. See [docs/architecture.md](docs/architecture.md).
 - **A guide page for answer engines.** `/guide.html` is static HTML (no JavaScript) that answers eight common questions with numbered steps, and carries FAQPage, HowTo and BreadcrumbList data tied to the main page's ZuCity, site and app entries. About and the crawler fallback now say "Questions? Read the guide" and link to it, and the sitemap lists both pages. See the AEO section of [docs/seo.md](docs/seo.md).
 - **Redo.** `⇧⌘Z`, `Ctrl+Shift+Z` and `Ctrl+Y` redo the last undone step. Undo and Redo buttons sit in the strip under the canvas and in the Output section.
@@ -20,6 +21,7 @@ All notable changes to MaskLab. The format follows [Keep a Changelog](https://ke
 
 ### Changed
 
+- **Switched from npm to pnpm** (21 Oct 2026): faster installs and a strict dependency tree. `pnpm-lock.yaml` replaces `package-lock.json` (resolved versions carried over), `package.json` pins `packageManager` to pnpm 10.32.1, and AGENTS.md and the dev launch config use pnpm commands. Use `pnpm install`, `pnpm dev`, `pnpm build`.
 - **Boot no longer freezes the page for font lookups.** The one long task at boot was the first layout searching system fonts, character by character, for the ticker's Japanese and the kaomoji (~50 ms unthrottled, ~300 ms on a 4× slowed phone). The font stacks now name Hiragino Sans and Noto Sans CJK JP, so those characters resolve directly. Local production build, real 4× slowdown, five cold mobile loads, two rounds back to back (load 170–200): median blocking 360 / 341 ms → 121 / 87 ms, longest freeze 308 / 332 ms → 99 / 81 ms. The only visible change: two Han characters in the ticker (文字) now draw in Hiragino Sans, the same Japanese font as the kana beside them, instead of the Chinese PingFang SC.
 - `scripts/indexnow.mjs` now submits two URLs, the app and `/guide.html`.
 - **Corrected performance note.** AGENTS.md had said Lighthouse overstated blocking time. That was wrong: the harness used to check it never applied its 4× CPU slowdown. Measured properly on 20 Oct 2026 (five cold mobile loads, real 4× slowdown): median blocking 158 ms, longest freeze 208 ms, largest paint about 700 ms, close to Lighthouse. AGENTS.md now points at the harness, `real-perf.mjs`, and its pass limits.
@@ -87,3 +89,8 @@ All notable changes to MaskLab. The format follows [Keep a Changelog](https://ke
 - Retyping text kept the previous words' ring size.
 - Reopening a saved text piece lost the editable words.
 - The "Skip to controls" link pointed at nothing.
+
+### Fixed
+
+- **First visits sometimes showed a plain shape.** The pair of starter textures and the other three download at the same time. When the three landed first, the visit no longer looked fresh and the shape was never dressed. The three now join only after the pair is handled. Forced in a test (pair held back 2.5 s): before 3 of 3 plain, after 3 of 3 dressed.
+

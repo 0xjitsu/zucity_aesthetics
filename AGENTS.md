@@ -204,9 +204,9 @@ The words about MaskLab live in two places that must say the same thing: the fal
 ## Verifying a change
 
 ```bash
-npx tsc -b --noEmit    # types
-npm run build          # types + production bundle
-npx oxlint src         # lint
+pnpm exec tsc -b --noEmit  # types
+pnpm build                 # types + production bundle
+pnpm exec oxlint src       # lint
 ```
 
 **There is no test suite. This app is verified by driving it in a browser.** No unit tests, no integration tests, no snapshot tests — none. Do not claim tests pass, do not report "all tests green", and do not add an assertion to a test file that does not exist. If you want a behavioural guarantee, either drive the running app and measure the output, or add a real test harness as its own change.
@@ -214,7 +214,7 @@ npx oxlint src         # lint
 Driving it:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 In a dev build only, `window.__masklab` is the Zustand store, so you can drive and inspect the running app from the console or an automation tool:
@@ -224,7 +224,7 @@ window.__masklab.getState().setTemplate('triskelion');
 window.__masklab.getState().composition.fills;
 ```
 
-**Performance: measure with the real-throttle harness, not by eye.** Run `node ~/Developer/jitsu-os/scripts/real-perf.mjs https://zucity-aesthetics.vercel.app/`. It applies a real 4× CPU slowdown, starts a fresh Chrome per run, proves its own slowdown took effect, and fails on any of: blocking time over 200 ms, longest freeze over 300 ms, any same-origin 404, any failed font. Measured 20 Oct 2026 on five cold mobile loads: median blocking 158 ms, longest freeze 208 ms, largest paint about 700 ms. That is close to Lighthouse, so Lighthouse's numbers for this app are roughly right. That boot long task (about 55 ms unthrottled) was not JavaScript: it was the first layout, where Chrome spent ~50 ms in per-character system font fallback to find glyphs for the ticker's Japanese and the kaomoji. Naming `'Hiragino Sans'` and `'Noto Sans CJK JP'` in `--font-sans` and `--font-mono` (`index.css`) lets those characters resolve from the list, and the task is gone. Measured 20 Oct 2026 on the local production build, back to back under the same load (load average 170–200 on 14 cores, so all numbers read high): before, median blocking 360 / 341 ms and longest freeze 308 / 332 ms; after, median blocking 121 / 87 ms and longest freeze 99 / 81 ms. **Keep a CJK family named in both font stacks**; any new non-Latin text that falls through to system fallback brings the long task back. To see what is inside a long task, trace it (`devtools.timeline` plus the `blink,fonts` categories) rather than reading only a JS CPU profile, which shows layout and font work as opaque `(program)` time. (An earlier note here claimed Lighthouse overstated blocking time several times over. That was wrong: the harness used to check it never applied its 4× slowdown. Do not repeat it.)
+**Performance: measure with the real-throttle harness, not by eye.** Run `node ~/Developer/jitsu-os/scripts/real-perf.mjs https://zucity-aesthetics.vercel.app/`. It applies a real 4× CPU slowdown, starts a fresh Chrome per run, proves its own slowdown took effect, and fails on any of: blocking time over 200 ms, longest freeze over 300 ms, any same-origin 404, any failed font. Before the font fix below, measured 20 Oct 2026 on five cold mobile loads of the live site: median blocking 158 ms, longest freeze 208 ms, largest paint about 700 ms. After it (live, 20 Oct, load average 254 on 14 cores, measured slowdown 3.0–4.6×): median blocking 28 ms, longest freeze 72 ms, largest paint 588 ms. That is close to Lighthouse, so Lighthouse's numbers for this app are roughly right. That boot long task (about 55 ms unthrottled) was not JavaScript: it was the first layout, where Chrome spent ~50 ms in per-character system font fallback to find glyphs for the ticker's Japanese and the kaomoji. Naming `'Hiragino Sans'` and `'Noto Sans CJK JP'` in `--font-sans` and `--font-mono` (`index.css`) lets those characters resolve from the list, and the task is gone. Measured 20 Oct 2026 on the local production build, back to back under the same load (load average 170–200 on 14 cores, so all numbers read high): before, median blocking 360 / 341 ms and longest freeze 308 / 332 ms; after, median blocking 121 / 87 ms and longest freeze 99 / 81 ms. **Keep a CJK family named in both font stacks**; any new non-Latin text that falls through to system fallback brings the long task back. To see what is inside a long task, trace it (`devtools.timeline` plus the `blink,fonts` categories) rather than reading only a JS CPU profile, which shows layout and font work as opaque `(program)` time. (An earlier note here claimed Lighthouse overstated blocking time several times over. That was wrong: the harness used to check it never applied its 4× slowdown. Do not repeat it.)
 
 The high-value checks are the ones that measure pixels rather than read code: render a composition to a canvas, export the same composition to SVG, rasterise both at the same size, and compare ink bounding boxes. That is how the defects below were found, and how the ones in `git log` were found before them — the commit bodies are worth reading, since several document a bug and the reasoning that fixed it.
 
