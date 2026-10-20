@@ -11,30 +11,80 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MaskLab" />
-    <meta
-      name="description"
-      content="MaskLab fills each region of a vector shape with its own texture, live in the browser, and exports lossless PNG and editable SVG. Nothing leaves your machine."
-    />
-    <title>MaskLab — one shape, many textures</title>
+    <meta name="description" content="MaskLab by ZuCity is a free in-browser tool that fills each region of a yin-yang, shape or typed text with its own texture. Export PNG or SVG. Nothing uploads." />
+    <title>MaskLab by ZuCity — free texture flag &amp; yin-yang maker</title>
+    <link rel="canonical" href="https://zucity-aesthetics.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MaskLab by ZuCity" />
+    <meta property="og:title" content="MaskLab by ZuCity — free texture flag &amp; yin-yang maker" />
+    <meta property="og:description" content="MaskLab by ZuCity is a free in-browser tool that fills each region of a yin-yang, shape or typed text with its own texture. Export PNG or SVG. Nothing uploads." />
+    <meta property="og:url" content="https://zucity-aesthetics.vercel.app/" />
+    <meta property="og:image" content="https://zucity-aesthetics.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A yin-yang filled with two textures beside the MaskLab by ZuCity wordmark" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@zucity_japan" />
+    <meta name="twitter:title" content="MaskLab by ZuCity — free texture flag &amp; yin-yang maker" />
+    <meta name="twitter:description" content="MaskLab by ZuCity is a free in-browser tool that fills each region of a yin-yang, shape or typed text with its own texture. Export PNG or SVG. Nothing uploads." />
+    <meta name="twitter:image" content="https://zucity-aesthetics.vercel.app/og.png" />
+    <meta name="twitter:image:alt" content="A yin-yang filled with two textures beside the MaskLab by ZuCity wordmark" />
     <link rel="preload" href="/fonts/SpaceMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/SpaceMono-Bold.woff2" as="font" type="font/woff2" crossorigin />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "MaskLab",
-        "url": "https://zucity-aesthetics.vercel.app",
-        "applicationCategory": "DesignApplication",
-        "operatingSystem": "Any (web browser)",
-        "description": "MaskLab fills each region of a vector shape with its own texture, live in the browser, and exports lossless PNG and editable SVG. Nothing leaves your machine.",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-        "isPartOf": { "@type": "WebSite", "name": "ZuCity", "url": "https://zucity.org" },
-        "creator": { "@type": "Organization", "name": "ZuCity", "url": "https://zucity.org" }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://zucity.org/#org",
+            "name": "ZuCity",
+            "url": "https://zucity.org",
+            "description": "A coliving experiment: a neighborhood an hour from Tokyo, in the Japanese Alps.",
+            "sameAs": ["https://x.com/zucity_japan", "https://instagram.com/zucity_japan", "https://jpy2.substack.com"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://zucity-aesthetics.vercel.app/#website",
+            "name": "MaskLab by ZuCity",
+            "url": "https://zucity-aesthetics.vercel.app/",
+            "publisher": { "@id": "https://zucity.org/#org" },
+            "inLanguage": ["en", "ja"]
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://zucity-aesthetics.vercel.app/#app",
+            "name": "MaskLab",
+            "alternateName": "MaskLab by ZuCity",
+            "url": "https://zucity-aesthetics.vercel.app/",
+            "description": "MaskLab by ZuCity is a free in-browser tool that fills each region of a yin-yang, shape or typed text with its own texture. Export PNG or SVG. Nothing uploads.",
+            "applicationCategory": "DesignApplication",
+            "operatingSystem": "Any (web browser)",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "creator": { "@id": "https://zucity.org/#org" },
+            "publisher": { "@id": "https://zucity.org/#org" },
+            "isPartOf": { "@id": "https://zucity-aesthetics.vercel.app/#website" },
+            "image": "https://zucity-aesthetics.vercel.app/og.png",
+            "screenshot": "https://zucity-aesthetics.vercel.app/og.png",
+            "featureList": [
+              "Fill each region of a vector shape with its own texture",
+              "Yin-yang, split circle, triskelion and grid templates",
+              "Upload your own SVG shape",
+              "Typed text as a mask, including vertical Japanese",
+              "Export lossless PNG, editable SVG and a JSON save file",
+              "Runs entirely in the browser; nothing is uploaded"
+            ],
+            "keywords": "ZuCity, MaskLab, texture flag maker, yin-yang maker, texture fill, sticker maker, album cover maker, SVG mask, Japanese text"
+          }
+        ]
       }
     </script>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background:#0a0a0a">
+    <div id="root"><main style="max-width:40rem;margin:0 auto;padding:2rem 1rem;color:#9a9aa4;font:14px/1.6 ui-monospace,monospace"><h1 style="color:#e5e5e5;font-size:1.25rem">MaskLab — made for ZuCity</h1><p>MaskLab is a free browser tool that fills each region of a vector shape — a yin-yang by default — or each letter of typed text, including vertical Japanese, with its own texture. Use it for flags, stickers and album covers.</p><p>Made for <a href="https://zucity.org" style="color:#a78bfa">ZuCity</a>, a coliving neighborhood an hour from Tokyo in the Japanese Alps. Everything runs in your browser; nothing is uploaded.</p><ul><li>Texture fill per region, with zoom, rotate and blend</li><li>Built-in shapes, your own SVG, or typed text</li><li>Export PNG, SVG or a JSON save file</li></ul><p><a href="https://zucity.org" style="color:#a78bfa">zucity.org</a> · <a href="https://x.com/zucity_japan" style="color:#a78bfa">X</a> · <a href="https://instagram.com/zucity_japan" style="color:#a78bfa">Instagram</a> · <a href="https://jpy2.substack.com" style="color:#a78bfa">Substack</a></p></main></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
