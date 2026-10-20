@@ -8,6 +8,8 @@ MaskLab is a client-only React + TypeScript app that fills the individual region
 
 There is no backend, no router, no test suite, and no environment configuration.
 
+**There is no `llms.txt`, on purpose.** No search engine or AI crawler consumes it, so it is not shipped; do not re-add it. Agent-readiness comes from this file, semantic HTML with correct accessible names, and the `WebApplication` JSON-LD block in `index.html`.
+
 ---
 
 ## The invariants
@@ -43,7 +45,7 @@ A `Region` is an id, a name, an optional hint, **SVG path data**, a default fill
 
 ### 3. Continuous controls snapshot once per gesture
 
-`store.ts` keeps a 30-step history. Two setters exist deliberately:
+`store.ts` keeps a 30-step history with undo and redo. Any recorded edit clears the redo stack. Two setters exist deliberately:
 
 | Setter | Records history? | Use for |
 |---|---|---|
@@ -51,17 +53,32 @@ A `Region` is an id, a name, an optional hint, **SVG path data**, a default fill
 | `commitFill(id, patch)` | Yes | Discrete edits — toggles, selects, single presses |
 | `setComposition(patch, record = true)` | Optional | Pass `false` for continuous |
 
-A range input fires `onChange` on every pixel of a drag. If each one recorded, a single zoom drag would push ~100 snapshots and flush the entire 30-step history, destroying every real edit behind it. So **continuous controls call `pushHistory()` once at gesture start and then use the non-recording setter.**
+A range input fires `onChange` on every pixel of a drag. If each one recorded, a single zoom drag would push ~100 snapshots and flush the entire 30-step history, destroying every real edit behind it. So **continuous controls call `pushHistory()` once per gesture and then use the non-recording setter.**
 
-The gesture-start hooks already exist — reuse them rather than inventing a new pattern:
+**A gesture that changes nothing records nothing.** Recording also clears redo, so a plain click that only selects a region must not cost an undo step or throw away the redo stack.
+
+The gesture hooks already exist — reuse them rather than inventing a new pattern:
 
 - `useGestureStart()` in `components/Controls.tsx` (`onPointerDown`, plus `onKeyDown` for non-repeat arrow keys) is wired into `SliderRow` and `ColorRow`. A slider built from those primitives is already correct; its `onChange` **must not** record.
-- `Stage.tsx` calls `pushHistory()` on pointer-down and pinch-start, and coalesces wheel events through `beginGesture()` with a 450 ms idle window.
+- `Stage.tsx` sets a `pending` flag on pointer-down and calls `pushHistory()` (via `recordOnce()`) on the first move that actually changes the fill. A pinch follows the same rule: touch-start sets `pending` (unless a pointer gesture is already running, in which case it shares that gesture's single entry), and the first pinch move records. A second finger never starts a new pointer gesture, so it never changes the selection. Wheel events coalesce through `beginGesture()` with a 450 ms idle window.
+- `useKeyboard.ts`: an arrow nudge records on the first press (`commitFill`) and uses `updateFill` for auto-repeats, so one held arrow key is one undo step.
 - `TextPanel.tsx` trailing-debounces spec changes by 250 ms, because `setTextTemplate` records history and an undebounced rebuild has the same history-flushing problem.
 
 Assets are deliberately **outside** the history: undoing a texture assignment must not also discard the decoded image.
 
-### 4. Producers must not silently emit zero or empty where data is missing
+The first-visit starter look (`useStarterLook()` in `App.tsx`) applies its fills with `updateFill` and records nothing, so undo at boot never steps back to a blank canvas. It only dresses a pristine session.
+
+### 4. Templates and regions are immutable once built
+
+Never mutate a `Template` or a `Region` in place. To change a shape, build a new object. Four things rely on object identity:
+
+- `shapeBounds()` in `lib/geometry.ts` caches bounds in a `WeakMap` keyed on the template.
+- `pathOf()` in `lib/render.ts` caches one `Path2D` per region; `orderOf()` caches the paint-order array per template.
+- History snapshots hold `customTemplate` **by reference**, not a deep clone.
+
+A mutated template keeps its old cached paths, bounds and order, and silently rewrites every undo snapshot that points at it. Ids are not a substitute key: every text template is `'text'` and every uploaded SVG is `'custom'`.
+
+### 5. Producers must not silently emit zero or empty where data is missing
 
 When a value is absent, say so. Do not substitute `0`, `''`, `[]`, or a hidden section, because a fallback renders forever without anyone noticing the producer stopped emitting.
 
@@ -74,7 +91,7 @@ The codebase already holds this line and you should match it:
 
 If you add a control or a readout, give it an explicit missing state. A conditional that hides the section is worse than a visible error, because the regression becomes invisible.
 
-### 5. Region ids from user files are untrusted
+### 6. Region ids from user files are untrusted
 
 Ids in an uploaded SVG are attacker- or exporter-controlled. `svgExport.ts` sanitises them through `clipId()` before they become fragment ids, and escapes every attribute value with `esc()`. Keep that up in any new serialiser.
 
@@ -130,19 +147,25 @@ Drop the file in `public/fonts/` and add an entry to `BUILTIN_FONTS` in `src/lib
 
 | File | What it owns |
 |---|---|
+| `index.html` | Meta tags, PWA and icon links, Space Mono `woff2` preloads, the `WebApplication` JSON-LD block |
+| `vercel.json` | Cache-Control headers only (see "Caching" below) |
+| `public/manifest.webmanifest` | PWA manifest: standalone display, icons. No service worker, on purpose |
+| `public/textures/` | Five bundled starter textures (`.webp`) that dress the first visit |
+| `public/fonts/` | Bundled OFL fonts, `.ttf` for the typesetter plus `woff2` copies of Space Mono for the UI, and `LICENSE.txt` |
 | `src/main.tsx` | React root, `StrictMode` mount |
-| `src/App.tsx` | Layout shell, skip link, mounts Stage/Inspector/Toasts, installs keyboard hook |
-| `src/index.css` | Tailwind v4 theme tokens and the `.btn` / `.label` / `.num` / `.panel` / `.checkerboard` classes |
+| `src/App.tsx` | Layout shell, header with the zucity.org and social links, skip link, the first-visit starter look, mounts Ticker/Stage/Inspector/Toasts, installs keyboard hook |
+| `src/index.css` | Tailwind v4 theme tokens, `@font-face`, and the unlayered `.btn` / `.label` / `.num` / `.panel` / `.checkerboard` / `.ticker` / `.cv-auto` classes |
 | `src/types.ts` | The whole data model: `Region`, `Template`, `Fill`, `Asset`, `Composition`, `TextSpec`, `FontAsset`, `MaskLabFile`, `BLEND_MODES` |
 | `src/opentype-js.d.ts` | Ambient declarations for opentype.js v2 — the package ships no types and the DefinitelyTyped package describes the 1.x API. Must stay a standalone `.d.ts`: a `declare module` inside a file that has its own imports is treated as module *augmentation*, not an ambient declaration, and would not satisfy the import. |
-| `src/store.ts` | Zustand state, 30-step undo, the gesture/history contract, toasts, dev-only `window.__masklab` |
-| `src/hooks/useKeyboard.ts` | Global shortcuts; inert while a form control has focus |
+| `src/store.ts` | Zustand state, 30-step undo and redo, the gesture/history contract, `carryFills()` (fills follow paint-order position across a template switch), `randomize()` (Remix), toasts, dev-only `window.__masklab` |
+| `src/hooks/useKeyboard.ts` | Global shortcuts, including undo/redo; inert while a form control has focus |
+| `src/lib/starterTextures.ts` | `loadStarterAssets()` (the visit's pair first, the other three streamed), `starterLook()`, `dress()` |
 | `src/lib/geometry.ts` | `fillTransform()` (the placement contract), `shapeBounds()`, `ringGeometry()`, `pointToViewBox()`, `deltaToViewBox()` |
-| `src/lib/render.ts` | `renderComposition()` — the shared canvas renderer for editor and PNG — plus the seeded grain tile |
+| `src/lib/render.ts` | `renderComposition()` — the shared canvas renderer for editor and PNG — the `pathOf()` / `orderOf()` identity caches, and the seeded grain tile |
 | `src/lib/pngExport.ts` | `exportEdge()` clamping, `renderToBlob()`, `exportPng()`, `copyPngToClipboard()`, and the `ExportInput` shape |
 | `src/lib/svgExport.ts` | `buildSvg()` / `exportSvg()` — vector document assembly, clip paths, blend-mode mapping, `feTurbulence` grain |
 | `src/lib/fileIo.ts` | `downloadBlob()`, `exportJson()`, `importJson()` and its validation messages |
-| `src/lib/ingest.ts` | Image decode pipeline, the format matrix, downscaling, drag-drop and clipboard file extraction, the failure surface |
+| `src/lib/ingest.ts` | Image decode pipeline, the format matrix, downscaling, animation sniffing (`isAnimated()`), drag-drop and clipboard file extraction, the failure surface |
 | `src/lib/svgImport.ts` | `parseSvgToTemplate()` — uploaded SVG to `Template`, primitive lowering, transform baking policy, path scanner |
 | `src/lib/textTemplate.ts` | `BUILTIN_FONTS`, `defaultTextSpec()`, `loadFont()`, `fontFromFile()`, `buildTextTemplate()` — typed text to `Template`, horizontal and vertical layout |
 | `src/lib/imageCache.ts` | Decode-once asset cache: `loadImage()`, `useImages()`, `ensureImages()` |
@@ -151,13 +174,15 @@ Drop the file in `public/fonts/` and add an entry to `BUILTIN_FONTS` in `src/lib
 | `src/templates/splitCircle.ts` | 2 regions, the minimal case |
 | `src/templates/triskelion.ts` | 6 regions, arcs generated programmatically |
 | `src/templates/quadrantGrid.ts` | 4 regions, deliberately plain |
-| `src/components/Stage.tsx` | Canvas element, sizing, drawing, selection outlines, `isPointInPath` hit-testing, drag/wheel/pinch gestures, drop and paste |
-| `src/components/Inspector.tsx` | Right-hand panel shell, template picker, SVG upload, text entry point, section layout |
+| `src/components/Stage.tsx` | Canvas element, sizing, drawing, selection outlines, `isPointInPath` hit-testing, drag/wheel/pinch-and-twist gestures, drop and paste, and the on-stage Undo / Redo / Add photos / Remix buttons |
+| `src/components/Buddy.tsx` | Kaomoji companion in the stage footer; pointer-aware gesture hints |
+| `src/components/Ticker.tsx` | Scrolling "Tips" strip that reads live state; pauses on hover, keyboard focus, tap, and off-screen |
+| `src/components/Inspector.tsx` | Right-hand panel shell, template picker, SVG upload, text entry point, section order (Template → Text → Output → Regions → Composition), `RegionList` (collapses past 12 regions) |
 | `src/components/TextPanel.tsx` | Text spec editing, debounce, stale-rebuild tickets, font picker and upload, CJK coverage warning |
-| `src/components/RegionCard.tsx` | Per-region row: swatch, drop target, file picker, and the expanded fill controls |
+| `src/components/RegionCard.tsx` | Per-region row (memoised): swatch, drop target, file picker, and the expanded fill controls |
 | `src/components/Controls.tsx` | `SliderRow` / `ColorRow` / `ToggleRow` primitives (with the gesture-start contract) and the composition-wide controls |
-| `src/components/Toolbar.tsx` | The four exports, JSON import, Randomize, Reset, and job/error handling |
-| `src/components/Toasts.tsx` | Notification stack |
+| `src/components/Toolbar.tsx` | The four exports, JSON import, Undo, Redo, Remix, Reset, the desktop shortcuts line, and job/error handling |
+| `src/components/Toasts.tsx` | Notification stack (`role="region"`, `aria-live="polite"`) |
 
 ---
 
@@ -184,6 +209,8 @@ window.__masklab.getState().setTemplate('triskelion');
 window.__masklab.getState().composition.fills;
 ```
 
+**Performance: measure real long tasks before optimising.** Lighthouse simulates CPU throttling, and on this app it overstated total blocking time by about 3.5× compared with long tasks measured under real DevTools CPU throttling. Record a throttled performance trace (or a `PerformanceObserver` on `longtask`) and optimise what it shows, not the Lighthouse score.
+
 The high-value checks are the ones that measure pixels rather than read code: render a composition to a canvas, export the same composition to SVG, rasterise both at the same size, and compare ink bounding boxes. That is how the defects below were found, and how the ones in `git log` were found before them — the commit bodies are worth reading, since several document a bug and the reasoning that fixed it.
 
 ---
@@ -204,9 +231,14 @@ Left recorded because the reasoning is reusable, and because each was found by m
 
 ### Smaller things
 
-- **There is no redo.** `store.ts` maintains a `future` array and `undo()` pushes onto it, but nothing ever reads it — there is no `redo` action and no shortcut bound. It is write-only state.
 - **Stage's draw effect has no dependency array**, so it runs on every render. That is deliberate — the canvas must repaint on any state change — but it means anything you add to that effect runs every commit.
-- **SVG textures rasterise at two different resolutions** depending on where you drop them. `Stage.tsx` passes `rasterSize: composition.exportSize`; `RegionCard.tsx` calls `ingestFiles(files)` with no options and gets the 2048 default.
+- **Re-render discipline.** A drag rewrites `composition.fills` every frame. `RegionCard` is wrapped in `memo`, and untouched regions keep their fill object's identity, so only the dragged card re-renders. `RegionList` owns the `fills` subscription, `Controls` subscribes to each composition field separately, and `Toolbar` reads `useStore.getState()` at click time. **Never subscribe a component to all of `composition`** (or to `assets`) unless it paints from it, as `Stage` does; it will re-render on every drag frame.
+- **`.btn` is unlayered CSS, so it beats Tailwind utilities.** Tailwind v4 puts utilities in `@layer utilities`, and an unlayered rule wins over any layered one regardless of specificity. On an element with `class="btn …"`, utilities for properties `.btn` sets (`color`, `background`, `border`, `padding`, `min-height`, `display`, `font-*`, `gap`, `transform` on hover) are ignored. Utilities for properties it does not set (`w-full`, `min-w-11`, position) work. To vary a button, add a modifier class next to `.btn-accent` in `index.css`.
+- **Caching: only fingerprinted files are immutable.** `vercel.json` gives `/assets/*` (Vite's hashed output) `max-age=31536000, immutable`. `/fonts/*` and `/textures/*` keep their names across releases, so they get 30 days plus `stale-while-revalidate=86400`; replacing one of those files in place can take up to 30 days to reach a returning visitor, so rename it if it must change at once. Icons and the manifest get one day. `index.html` has no rule and falls to Vercel's default, revalidated on each request. Never mark an unhashed path immutable.
+- **CSS `url()` resolves relative to the built stylesheet, which lives in `/assets/`.** `vite.config.ts` sets `base: './'`, and a relative `url('./fonts/…')` in `index.css` became `/assets/fonts/…` in production and 404'd, so Space Mono never loaded. The `@font-face` rules now use absolute `/fonts/…` URLs (`woff2` first, `ttf` fallback), matching the preloads in `index.html`. JavaScript `fetch` URLs are different: they resolve against the page, so `BUILTIN_FONTS` and `starterTextures.ts` correctly use `./fonts/…` and `./textures/…`.
+- **SVG textures rasterise at two different resolutions** depending on where they enter. `Stage.tsx` (drop, paste and Add photos) passes `rasterSize: composition.exportSize`; `RegionCard.tsx` calls `ingestFiles(files)` with no options and gets the 2048 default.
+- **Switching template carries fills by paint-order position** (`carryFills()`), because region ids differ between templates. Text is the exception: arriving at text from a shape starts fresh in ink (`defaultFills`); retyping within text carries.
+- **Animated detection sniffs bytes.** `isAnimated()` reads the first 64 KB: WebP needs a `VP8X` header with the animation bit or an `ANIM` chunk; GIF needs a `NETSCAPE2.0` extension. A multi-frame GIF without that looping extension reads as static.
 - **`blendOf()` in `svgExport.ts` silently degrades canvas-only composite operators** (`lighter`, `copy`, `xor`, `source-*`, `destination-*`) to `normal`. `BLEND_MODES` currently exposes none of them, so this is latent — but adding one to that list would create a PNG/SVG mismatch with no warning.
 - **WOFF2 fonts are rejected on purpose.** opentype.js v2 needs an external Brotli decompressor that this app does not ship, so `fontFromFile()` refuses `.woff2` with a message telling the user to convert. Do not "fix" this by adding the extension to `FONT_MIME`; it would fail later and less clearly.
 - **Text is capped at 500 glyphs** (`MAX_GLYPHS`). Every region is a separate clip-and-draw per frame, so the cap is a real performance boundary, not a guess.

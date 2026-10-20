@@ -13,7 +13,7 @@ Fill each region of a vector shape — or each letter of a word you type — wit
 [![React 19](https://img.shields.io/badge/React_19-1f1f26?style=flat-square&logo=react&logoColor=61dafb)](https://react.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ff3b14?style=flat-square)](#contributing)
 
-[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Architecture](docs/architecture.md) · [For Agents](AGENTS.md) · [Live app](https://zucity-aesthetics.vercel.app)
+[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Architecture](docs/architecture.md) · [For Agents](AGENTS.md) · [Changelog](CHANGELOG.md) · [Live app](https://zucity-aesthetics.vercel.app)
 
 </div>
 
@@ -41,28 +41,31 @@ npm install
 npm run dev
 ```
 
-Then drop an image onto a region. Or click a region and use the inspector. Full walkthrough: [docs/how-to-use.md](docs/how-to-use.md).
+The first canvas arrives already dressed in two of the bundled ZuCity textures. Press **Add photos** on the canvas to deal your own images in, **Remix** to deal again, and export. Or drop an image onto a region, or click a region and use the inspector. Full walkthrough: [docs/how-to-use.md](docs/how-to-use.md).
 
 | Gesture | Effect |
 |---------|--------|
-| Click a region on the canvas | Selects it |
+| Click or tap a region on the canvas | Selects it (records no undo step) |
 | Drag on the canvas | Pans the selected texture |
 | Scroll | Zooms the selected texture |
 | Shift-scroll | Spins the selected texture |
-| Two-finger pinch | Zooms the selected texture (touch) |
+| Two-finger pinch and twist | Zooms and spins the selected texture (touch) |
+| **Add photos** on the canvas | Picks images and deals them into the shape |
+| **Remix** on the canvas | Deals the loaded textures into the regions afresh |
 | Drop a file on a region card | Assigns that texture to that region |
 | Drop a file on the canvas | Fills the region under the cursor |
-| Paste (`Cmd/Ctrl+V`) | Ingests an image from the clipboard |
+| Paste (`⌘V` / `Ctrl+V`) | Ingests an image from the clipboard |
 
 | Key | Action |
 |-----|--------|
 | `1`–`9` | Select region N in paint order |
 | `[` `]` | Cycle backwards / forwards through regions |
-| Arrows | Nudge the selected texture (hold `Shift` for 5×) |
+| Arrows | Nudge the selected texture (hold `Shift` for 5×); one held key is one undo step |
 | `r` | Reset the selected region |
-| `Cmd/Ctrl+Z` | Undo (30 steps) |
+| `⌘Z` / `Ctrl+Z` | Undo (30 steps) |
+| `⇧⌘Z` / `Ctrl+Shift+Z` / `Ctrl+Y` | Redo |
 
-Shortcuts go inert while a form control has focus, so typing into the text box never moves the selection.
+Shortcuts go inert while a form control has focus, so typing into the text box never moves the selection. Undo and Redo are also buttons on the canvas and in **Output**, for phones.
 
 ## What's Inside
 
@@ -70,9 +73,13 @@ Shortcuts go inert while a form control has focus, so typing into the text box n
 - **Text as a template** — a typed run is lowered to outline paths with [opentype.js](https://github.com/opentypejs/opentype.js) and installed as an ordinary template. Split the run per glyph, per line, or keep it whole. Four bundled fonts plus upload of your own `.ttf` / `.otf` / `.woff`.
 - **Broad image ingest** — JPG, PNG, WebP, AVIF, GIF, SVG, BMP, ICO, TIFF, and HEIC where the browser can decode it. SVG textures are rasterised generously so they survive being zoomed past 1×. Files over 4096 px on the long edge are downscaled on ingest. Every rejection names the file and the reason — nothing fails silently.
 - **Four exports** — PNG up to 4096 px, a real vector SVG with one `clipPath` per region, a JSON document that round-trips a whole look including its embedded assets, and copy-to-clipboard.
-- **Six template sources** — four built-ins, typed text, and custom SVG upload.
+- **Six template sources** — four built-ins, typed text, and custom SVG upload. Switching shape keeps your textures: fills carry over region by region in paint order.
+- **A play loop for photos** — **Add photos** deals your images straight into the shape, **Remix** re-deals them with fresh placement, Undo and Redo walk through the deals. Built for a phone, where there is no drag-drop or paste.
+- **Starter textures** — five bundled ZuCity textures; each visit opens on a different pair, and the rest join the Remix deck.
 - **Composition controls** — background colour, global rotation, film grain, ring stroke, export size, and transparent-background export.
-- **30-step undo** — one entry per gesture, not per input event.
+- **30-step undo and redo** — one entry per gesture, not per input event. A click that only selects records nothing.
+- **Installable, phone-first** — a PWA manifest and icons for the home screen, and on a phone the canvas stays pinned while the controls scroll beneath it.
+- **Made for [ZuCity](https://zucity.org)** — the header links to zucity.org, X, Substack and Instagram, each in a new tab so the canvas is never lost.
 
 ## How It Works
 
@@ -138,14 +145,18 @@ export const myShape: Template = {
 ## Project Structure
 
 ```
+index.html                Meta, PWA links, font preloads, JSON-LD
+vercel.json               Cache-Control headers
 src/
+  App.tsx                 Layout shell, ZuCity links, first-visit starter look
   types.ts                Data model: Region, Template, Fill, Asset,
                           Composition, TextSpec, FontAsset, MaskLabFile
   opentype-js.d.ts        Ambient types for opentype.js v2
-  store.ts                Zustand state, 30-step undo, gesture/history contract
+  store.ts                Zustand state, 30-step undo/redo, gesture/history contract
   lib/
     geometry.ts           fillTransform() — the shared transform contract
     render.ts             Canvas renderer (live editor + PNG export)
+    starterTextures.ts    Bundled textures for the first visit
     svgExport.ts          Vector document assembly
     pngExport.ts          Raster export + clipboard
     fileIo.ts             JSON round-trip + download plumbing
@@ -154,11 +165,13 @@ src/
     textTemplate.ts       Typed text becomes a Template (opentype.js)
     imageCache.ts         Decode-once asset cache
   templates/              One file per built-in shape, plus the registry
-  components/             Stage (canvas, hit-testing, gestures), Inspector,
-                          TextPanel, RegionCard, Controls, Toolbar, Toasts
+  components/             Stage (canvas, hit-testing, gestures, on-canvas buttons),
+                          Inspector, TextPanel, RegionCard, Controls, Toolbar,
+                          Toasts, Ticker, Buddy
   hooks/useKeyboard.ts    Global shortcuts
-public/fonts/             Four bundled typefaces + LICENSE.txt (SIL OFL 1.1)
-public/llms.txt           Site overview for AI agents (llmstxt.org)
+public/fonts/             Bundled typefaces + LICENSE.txt (SIL OFL 1.1)
+public/textures/          Five starter textures (WebP)
+public/manifest.webmanifest  PWA manifest (+ icons alongside)
 ```
 
 <details>
@@ -196,7 +209,7 @@ Any static host. For Vercel:
 npx vercel --prod
 ```
 
-Framework preset: Vite. Build command `npm run build`, output directory `dist`. Live at [zucity-aesthetics.vercel.app](https://zucity-aesthetics.vercel.app).
+Framework preset: Vite. Build command `npm run build`, output directory `dist`. `vercel.json` sets cache headers only: hashed `/assets/*` immutable for a year, fonts and textures 30 days. Live at [zucity-aesthetics.vercel.app](https://zucity-aesthetics.vercel.app).
 
 ## Tech Stack
 
@@ -227,14 +240,14 @@ Before opening a PR, run `npx tsc -b --noEmit`, `npm run build`, and `npx oxlint
 
 MaskLab's source is licensed under the **GNU AGPL v3** — see [LICENSE](LICENSE). If you want to ship MaskLab inside a proprietary product, or run a modified version as a network service without publishing your changes, a commercial license is available; open an issue to ask.
 
-**Bundled fonts are not covered by the AGPL.** The three typefaces in `public/fonts/` are third-party works licensed under the **SIL Open Font License 1.1**, and redistributing this repository redistributes them:
+**Bundled fonts are not covered by the AGPL.** The four typefaces in `public/fonts/` are third-party works licensed under the **SIL Open Font License 1.1**, and redistributing this repository redistributes them:
 
 | File | Typeface | Copyright |
 |------|----------|-----------|
 | `Anton-Regular.ttf` | Anton | © 2020 The Anton Project Authors |
 | `ArchivoBlack-Regular.ttf` | Archivo Black | © 2017 The Archivo Black Project Authors |
 | `ZenKakuGothicNew-Black.ttf` | Zen Kaku Gothic New | © 2022 The Zen Project Authors |
-| `SpaceMono-Regular.ttf`, `SpaceMono-Bold.ttf` | Space Mono | © 2016 The Space Mono Project Authors |
+| `SpaceMono-Regular.ttf`, `SpaceMono-Bold.ttf`, and `woff2` copies of both | Space Mono | © 2016 The Space Mono Project Authors |
 
 The OFL permits redistribution, bundling, and embedding, including in a commercial product, provided the fonts are not sold on their own and the licence and copyright notices travel with them. It does **not** let you relicense the font files themselves. Attributions and the full licence text ship alongside the fonts in [`public/fonts/LICENSE.txt`](public/fonts/LICENSE.txt) — keep that file with them. Full terms: [scripts.sil.org/OFL](https://scripts.sil.org/OFL). If you fork MaskLab, this obligation forks with you.
 

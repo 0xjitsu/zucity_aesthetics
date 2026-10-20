@@ -4,23 +4,41 @@ MaskLab fills the separate regions of a shape with separate textures. A flag wit
 
 Everything below happens in your browser. **Nothing is uploaded anywhere** — there is no account, no server, and no network request carrying your images or fonts. Close the tab and it is gone, which is also why you should export a JSON if you want a look back later.
 
-The screen is two halves: the **canvas** on the left (the stage), and the **inspector** on the right, stacked below the canvas on a phone. The inspector runs top to bottom in the order you will use it: Template → Text (when you are using text) → Regions → Composition → Output.
+The screen is two halves: the **canvas** on the left (the stage), and the **inspector** on the right. On a phone the inspector sits below the canvas, and the canvas stays pinned at the top while you scroll the controls, so every change shows live. The inspector runs top to bottom: Template → Text (when you are using text) → Output → Regions → Composition.
+
+The canvas opens already dressed in two of the bundled ZuCity textures, a different pair on each visit. Treat it as a starting point: undo will not step back to a blank shape.
+
+You can install MaskLab to your home screen from your browser's share or install menu; it opens full-screen like an app.
+
+---
+
+## Play with your own photos
+
+The fastest way in, and the one built for a phone.
+
+1. Press **Add photos** in the bottom-right corner of the canvas (on a phone it is the **+** button). Pick one or more images.
+2. They are dealt into the shape straight away, one texture per region, each placed a little differently. A notice tells you how many arrived.
+3. Press **Remix** (the circular-arrows button beside it) to deal again. Every press is a new arrangement: your photos and the starter textures are shuffled so each gets a turn before any repeats.
+4. Went one too far? Press **Undo** (the left-curling arrow). **Redo** (the right-curling arrow) steps forward again.
+5. When you like it, scroll to **Output** and press **Export PNG**.
+
+Each deal is one undo step, so you can tap through a run of remixes and walk back to the one you liked.
 
 ---
 
 ## Put a texture in a shape
 
-1. Pick a shape under **Template**. Yin Yang is loaded by default. Split Circle, Triskelion, and Quadrant Grid are the other built-ins.
+1. Pick a shape under **Template**. Yin Yang is loaded by default. Split Circle, Triskelion, and Quadrant Grid are the other built-ins. Switching shape keeps your textures: the first region of the old shape hands its fill to the first region of the new one, and so on. Extra regions in the new shape start in their plain colours.
 2. Drag an image file from your desktop and drop it straight onto the shape on the canvas. It fills whichever region is under your cursor.
 
-   You can also drop onto a **region card** in the Regions list, or press the small image button on a card to open a file picker, or copy an image anywhere on your machine and press `Cmd/Ctrl+V`.
+   You can also drop onto a **region card** in the Regions list, press the small image button on a card to open a file picker for that one region, or copy an image anywhere on your machine and press `⌘V` / `Ctrl+V`. On a phone, the image button on a card is how you put one photo in one region; **Add photos** deals several at once.
 3. Repeat for the other regions with different images.
 
-Each region in the Regions list shows its name, a hint describing where it sits in the shape, and a swatch of what is currently in it. Cards are listed in paint order — the last card is the one drawn on top.
+Each region in the Regions list shows its name, a hint describing where it sits in the shape, and a swatch of what is currently in it. Cards are listed in paint order — the last card is the one drawn on top. A shape with more than 12 regions (a long word, say) shows the first 12 plus the selected one; press **show all** to see the rest.
 
 If a file cannot be read, a notice tells you which file and why. Nothing fails silently.
 
-**Accepted images:** JPG, PNG, WebP, AVIF, GIF, SVG, BMP, ICO, TIFF, and HEIC where your browser can decode it — Safari can, most others cannot, and the message will say so. Animated GIF and WebP use the first frame only. Anything over 4096 px on its long edge is scaled down when it comes in, to keep the tab from running out of memory.
+**Accepted images:** JPG, PNG, WebP, AVIF, GIF, SVG, BMP, ICO, TIFF, and HEIC where your browser can decode it — Safari can, most others cannot, and the message will say so. Animated GIF and WebP use the first frame only, and you are told when a file you added is animated. Anything over 4096 px on its long edge is scaled down when it comes in, to keep the tab from running out of memory.
 
 ---
 
@@ -73,6 +91,8 @@ That copies the texture *and* every setting above it — zoom, spin, offset, fli
 
 Retype whenever you like. The regions are rebuilt, but the fills you already placed are carried across by position, so changing a word does not throw away the textures.
 
+Switching **to** Text from a shape is the one move that starts fresh: the letters arrive in plain ink so they are readable, rather than inheriting a yin-yang's halves letter by letter.
+
 ---
 
 ## Upload your own SVG shape
@@ -104,7 +124,7 @@ Your font stays on your machine. It is only embedded into a file you export if y
 
 ## Adjust a texture
 
-Click a region — on the canvas or its card — to select it. The card expands with its controls, and the selected region is outlined in red on the canvas.
+Click or tap a region — on the canvas or its card — to select it. The card expands with its controls, and the selected region is outlined in violet on the canvas.
 
 Directly on the canvas:
 
@@ -114,6 +134,9 @@ Directly on the canvas:
 | Scroll | Zooms it |
 | Shift-scroll | Spins it |
 | Two-finger pinch | Zooms it, on a touchscreen |
+| Two-finger twist | Spins it, on a touchscreen — pinch and twist work together in one gesture |
+
+The hint under the canvas switches between the touch and mouse versions of these depending on your device.
 
 From the card: **Colour** (used when there is no image), **Zoom**, **Spin**, **X** and **Y** offset, **Flip X** / **Flip Y**, **Opacity**, and **Blend** — the full set of blend modes, so a texture can multiply or screen against what is behind it.
 
@@ -125,9 +148,23 @@ From the keyboard:
 | `[` `]` | Step backwards / forwards through regions |
 | Arrows | Nudge the texture (hold `Shift` to move 5× further) |
 | `r` | Reset the selected region |
-| `Cmd/Ctrl+Z` | Undo — 30 steps |
+| `⌘Z` / `Ctrl+Z` | Undo — 30 steps |
+| `⇧⌘Z` / `Ctrl+Shift+Z` / `Ctrl+Y` | Redo |
 
-Undo counts a whole gesture as one step, so a long slider drag is one undo, not a hundred. There is no redo.
+On a desktop, a one-line reminder of these shortcuts sits at the bottom of **Output**.
+
+### Undo and redo
+
+Undo and Redo are buttons in two places: the bottom-right corner of the canvas (always in reach on a phone) and the **Output** section. They grey out when there is nothing to undo or redo.
+
+One undo step is one thing you did, not one event the browser saw:
+
+- A whole drag, pinch, slider drag, or burst of scrolling is one step.
+- Holding an arrow key down is one step, however far it moves.
+- Tapping a region just to select it is not a step at all, and does not clear Redo.
+- Each Remix, Add photos, template switch, and Reset is one step.
+
+Redo is cleared as soon as you make a new change after undoing, as in any editor. History keeps the last 30 steps. Added images are never removed by undo; undo only changes where they are used.
 
 ### The whole composition
 
@@ -140,7 +177,7 @@ The **Composition** section applies to the piece as a whole:
 - **Ring width** / **Ring colour** — a circular stroke hugging the artwork. Zero is off.
 - **Export size** — 600 to 4096 px, square.
 
-**Randomize** throws textures and settings at every region at once; with no images loaded it shuffles colours only. **Reset** returns the composition to its defaults. Both are undoable.
+**Remix** (in **Output**, and on the canvas once any image is loaded) deals the loaded textures across every region with fresh placement; with no images loaded it shuffles colours only. **Reset** returns the composition to its defaults. Both are undoable.
 
 ---
 
@@ -160,5 +197,5 @@ Four buttons under **Output**. Which one you want depends on where the file is g
 Three things to know:
 
 - **Export the JSON if you care about the look.** There is no autosave. A refresh loses everything.
-- **Reopening a text piece brings back the artwork, but not the editable words.** The letterforms, the fills, and every setting return exactly as you left them — but the Text panel comes back empty, so changing the wording means typesetting it again. Keep a note of your text if it matters.
+- **Reopening a text piece brings back the editable words.** The letterforms, the fills, every setting, the Text panel's words and settings, and any font you uploaded all return as you left them.
 - **Grain is the one thing PNG and SVG do not match exactly.** The PNG grain is a noise tile; the SVG grain is generated by the SVG filter engine. Same intensity, same scale, different pixels. Everything else — placement, scale, rotation, blending, the ring — is identical between the two, by construction. If you need the grain to be exactly what you saw, export the PNG.

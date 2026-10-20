@@ -76,7 +76,22 @@ Assets are stored as base64 data URLs rather than object URLs specifically so th
 
 `store.ts` is a single Zustand store holding the composition, the asset library, the generated template (if any), the text spec (if any), fonts, selection, toasts, and history.
 
-Assets sit **outside** the undo history on purpose: undoing a texture assignment should not also discard the decoded image, which would force a re-decode and, worse, make redo impossible to implement correctly later.
+Assets sit **outside** the undo history on purpose: undoing a texture assignment should not also discard the decoded image, which would force a re-decode and leave redo pointing at an asset that no longer exists.
+
+Switching template keeps the look. Region ids differ between templates, so `carryFills()` hands fills across by **paint-order position**: the old template's first region gives its fill to the new one's first, and so on; regions beyond the old count get their defaults. Retyping text uses the same function. The one exception is arriving at the text template from a shape, which starts fresh in ink so a typed word is readable rather than inheriting a yin-yang's halves glyph by glyph.
+
+### Immutability contract
+
+**Templates and regions are never mutated after they are built.** To change a shape, build a new `Template`. Several things rely on that, by object identity:
+
+| Consumer | What it caches or holds |
+|---|---|
+| `shapeBounds()` in `geometry.ts` | Union bounding box per template (`WeakMap`) |
+| `pathOf()` in `render.ts` | One parsed `Path2D` per region (`WeakMap`) |
+| `orderOf()` in `render.ts` | Paint-order region array per template (`WeakMap`) |
+| History snapshots in `store.ts` | `customTemplate` held by reference, not cloned |
+
+Identity is the only correct key. Ids are not unique over time: every text template is `'text'` and every uploaded SVG is `'custom'`, which is exactly how `shapeBounds()` once returned a ring sized for the previous words. `WeakMap` lets a discarded template's entries be collected with it.
 
 ---
 
@@ -140,7 +155,7 @@ The SVG exporter reserves its `<defs>` slot and fills it after the body is built
 
 ## Undo and the gesture model
 
-The history is 30 snapshots of `{ composition, customTemplate, textSpec }`, deep-cloned. The interesting part is not the depth, it is **what counts as one step**.
+The history is up to 30 snapshots of `{ composition, customTemplate, textSpec }`, with a matching redo stack. `composition` and `textSpec` are deep-cloned; `customTemplate` is kept by reference, because templates are immutable and a text template can hold 500 glyph outlines that would otherwise be copied on every push. Any recorded edit clears the redo stack. The interesting part is not the depth, it is **what counts as one step**.
 
 A range input fires `onChange` on every pixel of a drag. Recording each one would push roughly a hundred snapshots for a single zoom drag and flush the entire history, silently destroying every real edit behind it. That is a bug that presents as "undo doesn't work" long after the change that caused it.
 
@@ -152,17 +167,20 @@ So the store exposes two setters and the UI is required to pick correctly:
 | `commitFill(id, patch)` | Yes | Discrete: toggles, selects, single key presses |
 | `setComposition(patch, record = true)` | Optional | Pass `false` for continuous |
 
-**Continuous controls call `pushHistory()` once at gesture start, then use the non-recording setter.** Every continuous surface in the app implements that contract, each in the way its input demands:
+**Continuous controls call `pushHistory()` once per gesture, then use the non-recording setter.** Every continuous surface in the app implements that contract, each in the way its input demands:
 
 - `SliderRow` and `ColorRow` snapshot on `pointerdown`, and on a non-repeating arrow keypress so keyboard dragging behaves the same.
-- `Stage.tsx` snapshots on pointer-down and pinch-start. Wheel events have no natural start or end, so they are coalesced by an idle timer — the first wheel event of a burst snapshots, and the gesture is considered over after 450 ms of quiet.
+- `Stage.tsx` records on the **first move that changes something**, not on pointer-down. Pointer-down selects and sets a `pending` flag; the first drag move with a non-zero delta calls `recordOnce()`, which pushes history and clears the flag. A pinch follows the same rule, and a pinch that starts inside a running pointer gesture shares that gesture's single entry. A second finger never starts a new pointer gesture, so it cannot change the selection mid-pinch. Wheel events have no natural start or end, so they are coalesced by an idle timer — the first wheel event of a burst snapshots, and the gesture is considered over after 450 ms of quiet.
+- `useKeyboard.ts` records the first arrow nudge with `commitFill` and applies auto-repeats with `updateFill`, so one held key is one step.
 - `TextPanel.tsx` trailing-debounces spec edits by 250 ms, because installing a rebuilt text template records history and typing a word would otherwise cost one undo step per keystroke.
+
+**A gesture that changes nothing records nothing.** This matters twice over now that redo exists: recording clears the redo stack, so a click that merely selected a region used to cost an undo step *and* throw away everything the user could have redone.
 
 The result is that undo steps correspond to things a person did, not to events the browser emitted.
 
 Text rebuilds carry a second hazard the panel handles: font loading is async and the Japanese face is 2.3 MB, so a slow load can resolve after a newer one was requested. Each rebuild takes a monotonically increasing ticket and discards its own result if a newer rebuild has started, so the canvas always reflects the most recent spec rather than whichever fetch happened to finish last.
 
-There is currently **no redo**. The store maintains a `future` array and `undo()` pushes onto it, but nothing reads it — no action, no shortcut. Keeping assets outside the history is what would make redo implementable, but it is not implemented.
+Redo is `redo()` in the store, bound to `⇧⌘Z` / `Ctrl+Shift+Z` / `Ctrl+Y`, with Undo and Redo buttons on the stage and in the Output section, because a phone has no keyboard.
 
 ---
 
@@ -210,6 +228,39 @@ The stage is a single `<canvas>`. It is sized **square by CSS** and JavaScript o
 Hit-testing uses `isPointInPath` against `Path2D` objects in viewBox units, walking paint order backwards so the topmost region wins. Pointer coordinates are mapped back through `pointToViewBox()`, which also undoes the global rotation; drag deltas go through `deltaToViewBox()`, which rotates without translating. Because both work in viewBox units, a drag moves a texture by the same amount regardless of the canvas's pixel size.
 
 Wheel handling is bound directly to the element rather than through React's synthetic system, because `preventDefault()` requires a non-passive listener and React cannot guarantee that.
+
+Below the `lg` breakpoint the stage is `position: sticky` at the top of the page, so the canvas stays in view while the inspector scrolls. Its height is `44svh` rather than `dvh`: the small-viewport unit does not change when the iOS toolbar collapses, so the canvas does not resize mid-scroll.
+
+### Render caching
+
+The draw effect in `Stage.tsx` deliberately has no dependency array and runs on every render, so the per-frame cost of `renderComposition()` matters. Two `WeakMap` caches in `render.ts` remove the repeated work: `pathOf()` parses each region's `d` into a `Path2D` once, and `orderOf()` sorts a template's regions into paint order once. Without them a 500-glyph text template re-parsed ~500 paths and re-sorted them every frame. Both are keyed on object identity and are correct only because of the immutability contract above.
+
+### Keeping drags cheap in React
+
+A drag rewrites `composition.fills` every frame, so what subscribes to it decides how much re-renders. `RegionCard` is memoised, and untouched regions keep their fill object's identity, so only the dragged card re-renders. `RegionList` owns the `fills` subscription instead of the whole `Inspector`; `Controls` subscribes to each composition field separately; `Toolbar` reads the store at click time instead of subscribing. Below-the-fold inspector sections carry `.cv-auto` (`content-visibility: auto`), which lets the browser skip their layout and paint on first load.
+
+### Accessibility notes
+
+The canvas is `role="img"` with a label naming the template and its region count. The ticker is a focusable "Tips" region that pauses on hover (real pointers only), keyboard focus, a tap, and whenever it is scrolled off-screen. The toast stack is a labelled `role="region"` with `aria-live="polite"`. Hidden file inputs carry labels. The `--color-faint` (#80808b) and `--color-hot` (#ef4444) tokens meet 4.5:1 on the ground, panel and raise surfaces (lowest: 4.62, faint on raise).
+
+---
+
+## First load and caching
+
+The first visit is dressed, not blank. `useStarterLook()` in `App.tsx` calls `loadStarterAssets()`, which shuffles the five bundled textures in `public/textures/`, fetches **only the chosen pair** in parallel, and dresses the default yin-yang as soon as those two arrive. The other three stream in behind and join the Remix deck. Starters go through the same ingest pipeline as an upload, so they behave identically downstream. The dressing applies its fills with `updateFill`, so it records **no undo entry**, and it only touches a pristine session (no history, no assets, every fill still a flat colour). A failed fetch degrades quietly to flat colour.
+
+The UI font, Space Mono, is preloaded from `index.html` as `woff2`, with the `.ttf` as a CSS fallback. `@font-face` uses absolute `/fonts/…` URLs: a relative `url()` resolves against the built stylesheet in `/assets/`, which is how the font 404'd in production before. The typesetter's built-in fonts are fetched from JavaScript and use relative `./fonts/…` URLs, which resolve against the page and are correct.
+
+`vercel.json` sets cache headers and nothing else:
+
+| Path | Cache-Control | Why |
+|---|---|---|
+| `/assets/*` | `public, max-age=31536000, immutable` | Vite fingerprints these; a new build means a new name |
+| `/fonts/*`, `/textures/*` | `public, max-age=2592000, stale-while-revalidate=86400` | Stable names, so 30 days rather than forever |
+| Icons, `manifest.webmanifest` | `public, max-age=86400` | Change rarely, but must be able to change |
+| `/` (`index.html`) | No rule; Vercel's default revalidates on each request | It names the current hashed assets |
+
+Only fingerprinted files may be immutable. There is a PWA manifest and icons for installability but no service worker, on purpose: installing should not bring a stale-cache risk.
 
 ---
 

@@ -14,7 +14,8 @@ Zen Kaku Gothic New
   https://fonts.google.com/specimen/Zen+Kaku+Gothic+New
 
 Space Mono
-  SpaceMono-Regular.ttf, SpaceMono-Bold.ttf — Copyright the Space Mono Project Authors
+  SpaceMono-Regular.ttf/.woff2, SpaceMono-Bold.ttf/.woff2 — Copyright the Space Mono Project Authors
+  (the .woff2 files are the same fonts, recompressed for the web)
   https://fonts.google.com/specimen/Space+Mono
 
 Fonts you upload yourself are never redistributed by MaskLab: they stay in your
