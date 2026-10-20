@@ -7,6 +7,39 @@ import { useKeyboard } from './hooks/useKeyboard';
 import { useStore } from './store';
 import { loadStarterAssets, starterLook } from './lib/starterTextures';
 
+/** ZuCity's official accounts, as linked from zucity.org's own hero. */
+const SOCIALS = [
+  {
+    label: 'X',
+    href: 'https://x.com/zucity_japan',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Substack',
+    href: 'https://jpy2.substack.com',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Instagram',
+    href: 'https://instagram.com/zucity_japan',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+      </svg>
+    ),
+  },
+];
+
 /** Module-level, so React StrictMode's double-run of effects cannot dress twice. */
 let dressed = false;
 
@@ -86,14 +119,32 @@ export default function App() {
             MaskLab
           </h1>
           <p className="label hidden sm:block">one shape, many textures 一つの形、無数の質感</p>
-          <a
-            href="https://zucity.org"
-            className="btn ml-auto min-h-11 border-0 bg-transparent px-2 text-accent hover:text-ink"
-            aria-label="Back to zucity.org, the project this app was made for"
-          >
-            zucity.org
-            <span aria-hidden="true">↗</span>
-          </a>
+          <nav aria-label="ZuCity" className="ml-auto flex items-center">
+            {/* New tab, so leaving for ZuCity never throws away the canvas. */}
+            <a
+              href="https://zucity.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn min-h-11 border-0 bg-transparent px-2 text-accent hover:text-ink"
+              aria-label="zucity.org, the project this app was made for (opens in a new tab)"
+            >
+              <span className="hidden sm:inline">zucity.org</span>
+              <span className="sm:hidden">zucity</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+            {SOCIALS.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn min-h-11 min-w-11 border-0 bg-transparent px-0 hover:text-accent"
+                aria-label={`ZuCity on ${s.label} (opens in a new tab)`}
+              >
+                {s.icon}
+              </a>
+            ))}
+          </nav>
         </header>
         <Ticker />
         <Stage />
