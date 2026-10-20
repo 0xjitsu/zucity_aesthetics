@@ -8,7 +8,7 @@ MaskLab is a client-only React + TypeScript app that fills the individual region
 
 There is no backend, no router, no test suite, and no environment configuration.
 
-**There is no `llms.txt`, on purpose.** No search engine or AI crawler consumes it, so it is not shipped; do not re-add it. Agent-readiness comes from this file, semantic HTML with correct accessible names, and the `WebApplication` JSON-LD block in `index.html`.
+**There is no `llms.txt`, on purpose.** No search engine or AI crawler consumes it, so it is not shipped; do not re-add it. Agent-readiness comes from this file, semantic HTML with correct accessible names, the JSON-LD `@graph` in `index.html`, and the crawlable HTML inside `#root`. Search and AI visibility, and the rules for changing site copy, are in [docs/seo.md](docs/seo.md).
 
 ---
 
@@ -141,20 +141,30 @@ Most of the work is already done: `lib/ingest.ts` accepts **any** `image/*` MIME
 
 Drop the file in `public/fonts/` and add an entry to `BUILTIN_FONTS` in `src/lib/textTemplate.ts` with an `id`, `name`, `source: 'builtin'`, a **relative** `url` (`./fonts/…`, because `vite.config.ts` sets `base: './'`), and an honest `coverage` string — the UI shows it next to the name and uses it to warn about CJK/Latin mismatches. **Any font you add must be redistributable, and its licence obligations become the repository's** (see the OFL note in the README).
 
+### To change copy on the site
+
+The words about MaskLab live in two places that must say the same thing: the fallback HTML inside `<div id="root">` in `index.html` (what crawlers that do not run JavaScript read) and `src/components/About.tsx` (what people see). Change both in the same commit. Title and description rules, and what to update when the domain changes, are in [docs/seo.md](docs/seo.md).
+
 ---
 
 ## File map
 
 | File | What it owns |
 |---|---|
-| `index.html` | Meta tags, PWA and icon links, Space Mono `woff2` preloads, the `WebApplication` JSON-LD block |
+| `index.html` | Title, description, canonical, Open Graph and Twitter tags, PWA and icon links, Space Mono `woff2` preloads, the JSON-LD `@graph` (Organization, WebSite, WebApplication), and the crawlable fallback HTML inside `#root` that must match `About.tsx` (see [docs/seo.md](docs/seo.md)) |
 | `vercel.json` | Cache-Control headers only (see "Caching" below) |
 | `public/manifest.webmanifest` | PWA manifest: standalone display, icons. No service worker, on purpose |
+| `public/og.png` | 1200 × 630 social preview image named by `og:image` and `twitter:image`. A static asset; no script in the repo generates it |
+| `public/robots.txt` | Allows all crawlers, names the search and AI crawlers explicitly, and points at the sitemap |
+| `public/sitemap.xml` | One URL (the root) with a hand-written `lastmod` |
+| `public/3e7a11ffb764d796ce88a0d7894582cf.txt` | IndexNow key file. Its name and contents are the key in `scripts/indexnow.mjs`; never delete or rename it |
+| `scripts/indexnow.mjs` | Pings IndexNow with the root URL. Run `node scripts/indexnow.mjs` after every production deploy; it refuses to run until the key file is live |
+| `docs/seo.md` | What ships for search and AI visibility, owner-only off-site actions, and agent rules for changing copy |
 | `public/textures/` | Five bundled starter textures (`.webp`) that dress the first visit |
 | `public/fonts/` | Bundled OFL fonts, `.ttf` for the typesetter plus `woff2` copies of Space Mono for the UI, and `LICENSE.txt` |
 | `src/main.tsx` | React root, `StrictMode` mount |
-| `src/App.tsx` | Layout shell, header with the zucity.org and social links, skip link, the first-visit starter look, mounts Ticker/Stage/Inspector/Toasts, installs keyboard hook |
-| `src/index.css` | Tailwind v4 theme tokens, `@font-face`, and the unlayered `.btn` / `.label` / `.num` / `.panel` / `.checkerboard` / `.ticker` / `.cv-auto` classes |
+| `src/App.tsx` | Layout shell, header with the zucity.org and social links (X → Instagram → Substack), skip link, the first-visit starter look, the phone tab state and the selection→Regions subscription, the `ready` flag that mounts the inspector in a transition, the sticky `data-sticky-stage` wrapper around Stage and `InspectorTabs`, installs keyboard hook |
+| `src/index.css` | Tailwind v4 theme tokens, `@font-face`, and the unlayered `.btn` / `.navlink` / `.tab` / `.label` / `.num` / `.panel` / `.checkerboard` / `.ticker` classes |
 | `src/types.ts` | The whole data model: `Region`, `Template`, `Fill`, `Asset`, `Composition`, `TextSpec`, `FontAsset`, `MaskLabFile`, `BLEND_MODES` |
 | `src/opentype-js.d.ts` | Ambient declarations for opentype.js v2 — the package ships no types and the DefinitelyTyped package describes the 1.x API. Must stay a standalone `.d.ts`: a `declare module` inside a file that has its own imports is treated as module *augmentation*, not an ambient declaration, and would not satisfy the import. |
 | `src/store.ts` | Zustand state, 30-step undo and redo, the gesture/history contract, `carryFills()` (fills follow paint-order position across a template switch), `randomize()` (Remix), toasts, dev-only `window.__masklab` |
@@ -168,17 +178,18 @@ Drop the file in `public/fonts/` and add an entry to `BUILTIN_FONTS` in `src/lib
 | `src/lib/ingest.ts` | Image decode pipeline, the format matrix, downscaling, animation sniffing (`isAnimated()`), drag-drop and clipboard file extraction, the failure surface |
 | `src/lib/svgImport.ts` | `parseSvgToTemplate()` — uploaded SVG to `Template`, primitive lowering, transform baking policy, path scanner |
 | `src/lib/textTemplate.ts` | `BUILTIN_FONTS`, `defaultTextSpec()`, `loadFont()`, `fontFromFile()`, `buildTextTemplate()` — typed text to `Template`, horizontal and vertical layout |
-| `src/lib/imageCache.ts` | Decode-once asset cache: `loadImage()`, `useImages()`, `ensureImages()` |
+| `src/lib/imageCache.ts` | Decode-once asset cache: `loadImage()` (awaits `img.decode()` so decoding happens off the main thread), `useImages()`, `ensureImages()` |
 | `src/templates/index.ts` | Registry, `CUSTOM_TEMPLATE_ID` / `TEXT_TEMPLATE_ID` / `DEFAULT_TEMPLATE_ID`, `findTemplate()`, `sortedRegions()` |
 | `src/templates/yinYang.ts` | Default template, 4 regions |
 | `src/templates/splitCircle.ts` | 2 regions, the minimal case |
 | `src/templates/triskelion.ts` | 6 regions, arcs generated programmatically |
 | `src/templates/quadrantGrid.ts` | 4 regions, deliberately plain |
-| `src/components/Stage.tsx` | Canvas element, sizing, drawing, selection outlines, `isPointInPath` hit-testing, drag/wheel/pinch-and-twist gestures, drop and paste, and the on-stage Undo / Redo / Add photos / Remix buttons |
-| `src/components/Buddy.tsx` | Kaomoji companion in the stage footer; pointer-aware gesture hints |
+| `src/components/Stage.tsx` | Canvas element, sizing, drawing, selection outlines, `isPointInPath` hit-testing, drag/wheel/pinch-and-twist gestures, drop and paste, and the tool strip under the art (Buddy hint plus Undo / Redo / Add photos / Remix) |
+| `src/components/Buddy.tsx` | Kaomoji companion in the stage's tool strip; pointer-aware gesture hints, one truncated line on phones |
 | `src/components/Ticker.tsx` | Scrolling "Tips" strip that reads live state; pauses on hover, keyboard focus, tap, and off-screen |
-| `src/components/Inspector.tsx` | Right-hand panel shell, template picker, SVG upload, text entry point, section order (Template → Text → Output → Regions → Composition), `RegionList` (collapses past 12 regions) |
-| `src/components/TextPanel.tsx` | Text spec editing, debounce, stale-rebuild tickets, font picker and upload, CJK coverage warning |
+| `src/components/Inspector.tsx` | Inspector shell (empty until `ready`), `InspectorTabs` and the `Tab` type, the desktop/phone split via `matchMedia`, template picker, SVG upload, text entry point (dynamic `import('../lib/textTemplate')`), the lazy `TextPanel`, desktop section order (Template → Text → Output → Regions → Composition → About), phone panels (Shape / Regions / Look / Export), `RegionList` (collapses past 12 regions, scrolls the selected card into view below the sticky stage) |
+| `src/components/TextPanel.tsx` | Text spec editing, debounce, stale-rebuild tickets, font picker and upload, CJK coverage warning. Lazy-loaded; never import it statically |
+| `src/components/About.tsx` | In-app About section (desktop: foot of the inspector; phone: Export tab). Must say the same as the `#root` fallback in `index.html` |
 | `src/components/RegionCard.tsx` | Per-region row (memoised): swatch, drop target, file picker, and the expanded fill controls |
 | `src/components/Controls.tsx` | `SliderRow` / `ColorRow` / `ToggleRow` primitives (with the gesture-start contract) and the composition-wide controls |
 | `src/components/Toolbar.tsx` | The four exports, JSON import, Undo, Redo, Remix, Reset, the desktop shortcuts line, and job/error handling |
@@ -233,8 +244,8 @@ Left recorded because the reasoning is reusable, and because each was found by m
 
 - **Stage's draw effect has no dependency array**, so it runs on every render. That is deliberate — the canvas must repaint on any state change — but it means anything you add to that effect runs every commit.
 - **Re-render discipline.** A drag rewrites `composition.fills` every frame. `RegionCard` is wrapped in `memo`, and untouched regions keep their fill object's identity, so only the dragged card re-renders. `RegionList` owns the `fills` subscription, `Controls` subscribes to each composition field separately, and `Toolbar` reads `useStore.getState()` at click time. **Never subscribe a component to all of `composition`** (or to `assets`) unless it paints from it, as `Stage` does; it will re-render on every drag frame.
-- **`.btn` is unlayered CSS, so it beats Tailwind utilities.** Tailwind v4 puts utilities in `@layer utilities`, and an unlayered rule wins over any layered one regardless of specificity. On an element with `class="btn …"`, utilities for properties `.btn` sets (`color`, `background`, `border`, `padding`, `min-height`, `display`, `font-*`, `gap`, `transform` on hover) are ignored. Utilities for properties it does not set (`w-full`, `min-w-11`, position) work. To vary a button, add a modifier class next to `.btn-accent` in `index.css`.
-- **Caching: only fingerprinted files are immutable.** `vercel.json` gives `/assets/*` (Vite's hashed output) `max-age=31536000, immutable`. `/fonts/*` and `/textures/*` keep their names across releases, so they get 30 days plus `stale-while-revalidate=86400`; replacing one of those files in place can take up to 30 days to reach a returning visitor, so rename it if it must change at once. Icons and the manifest get one day. `index.html` has no rule and falls to Vercel's default, revalidated on each request. Never mark an unhashed path immutable.
+- **`.btn` is unlayered CSS, so it beats Tailwind utilities.** Tailwind v4 puts utilities in `@layer utilities`, and an unlayered rule wins over any layered one regardless of specificity. On an element with `class="btn …"`, utilities for properties `.btn` sets (`color`, `background`, `border`, `padding`, `min-height`, `display`, `font-*`, `gap`, `transform` on hover) are ignored. Utilities for properties it does not set (`w-full`, `min-w-11`, position) work. To vary a button, add a modifier class next to `.btn-accent` in `index.css`. **A link that should not look like a button must not use `.btn` at all**: the header links once did, with utilities to unbox them, and rendered as boxed grey buttons. They use `.navlink` (plain text or icon, 44 px target) and `.navlink-primary` for the zucity.org link. Use `.navlink` for header-style links, `.btn` for actions.
+- **Caching: only fingerprinted files are immutable.** `vercel.json` gives `/assets/*` (Vite's hashed output) `max-age=31536000, immutable`. `/fonts/*` and `/textures/*` keep their names across releases, so they get 30 days plus `stale-while-revalidate=86400`; replacing one of those files in place can take up to 30 days to reach a returning visitor, so rename it if it must change at once. Icons, the manifest, `og.png`, `robots.txt`, `sitemap.xml` and the IndexNow key file get one day. `index.html` has no rule and falls to Vercel's default, revalidated on each request. Never mark an unhashed path immutable.
 - **CSS `url()` resolves relative to the built stylesheet, which lives in `/assets/`.** `vite.config.ts` sets `base: './'`, and a relative `url('./fonts/…')` in `index.css` became `/assets/fonts/…` in production and 404'd, so Space Mono never loaded. The `@font-face` rules now use absolute `/fonts/…` URLs (`woff2` first, `ttf` fallback), matching the preloads in `index.html`. JavaScript `fetch` URLs are different: they resolve against the page, so `BUILTIN_FONTS` and `starterTextures.ts` correctly use `./fonts/…` and `./textures/…`.
 - **SVG textures rasterise at two different resolutions** depending on where they enter. `Stage.tsx` (drop, paste and Add photos) passes `rasterSize: composition.exportSize`; `RegionCard.tsx` calls `ingestFiles(files)` with no options and gets the 2048 default.
 - **Switching template carries fills by paint-order position** (`carryFills()`), because region ids differ between templates. Text is the exception: arriving at text from a shape starts fresh in ink (`defaultFills`); retyping within text carries.
@@ -243,3 +254,8 @@ Left recorded because the reasoning is reusable, and because each was found by m
 - **WOFF2 fonts are rejected on purpose.** opentype.js v2 needs an external Brotli decompressor that this app does not ship, so `fontFromFile()` refuses `.woff2` with a message telling the user to convert. Do not "fix" this by adding the extension to `FONT_MIME`; it would fail later and less clearly.
 - **Text is capped at 500 glyphs** (`MAX_GLYPHS`). Every region is a separate clip-and-draw per frame, so the cap is a real performance boundary, not a guess.
 - **opentype.js is dynamically imported** in `textTemplate.ts` to keep ~250 kB out of the initial bundle. Keep it behind the dynamic import; a static import at the top of any eagerly-loaded module undoes the split.
+- **Never import `TextPanel` or `lib/textTemplate` statically from an eagerly loaded module** (`App`, `Inspector`, `Stage`, `store`, `Toolbar`, anything they import). `Inspector.tsx` loads `TextPanel` with `React.lazy` and `textTemplate` with `await import()` inside the Text button handler; one static `import { … } from '../lib/textTemplate'` pulls the typesetter back into the main bundle (85.5 kB gzipped today, 89.1 kB before the split). If you need a constant from `textTemplate.ts` in eager code, move the constant, not the import.
+- **Heavy below-the-fold UI goes inside the inspector's transition.** `App` mounts the inspector only after `ready` flips in `startTransition`, scheduled by `requestAnimationFrame` *and* a 120 ms `setTimeout`. Keep the timeout: background tabs never fire rAF, and without it a page opened in a background tab shows empty controls until it is focused. New heavy UI belongs inside `Inspector` (or another component behind `ready`), not rendered beside `Stage` in the first paint.
+- **Phones render only the active tab panel.** Inactive `role="tabpanel"` shells stay in the DOM, `hidden` and empty, so `aria-controls` resolves. A component in an inactive tab is unmounted, so it must not hold state the user expects to survive a tab switch; keep such state in the store.
+- **`content-visibility` with an intrinsic-size estimate caused layout shift here; prefer not rendering hidden panels.** A `.cv-auto` class (`content-visibility: auto; contain-intrinsic-size: auto 480px`) was tried on inspector sections and removed: sections snapped from 480 px to their real height and pushed About down, a 0.062 desktop layout shift.
+- **Selection drives the phone tab.** `App` subscribes to the store and switches to Regions when `selectedId` changes to a new value. Anything that sets `selectedId` (canvas, keys, cards) therefore opens Regions on a phone. Do not move this into a component that subscribes to `selectedId` through a hook, or `App` re-renders on every selection.

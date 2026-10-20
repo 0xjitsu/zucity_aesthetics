@@ -229,7 +229,26 @@ Hit-testing uses `isPointInPath` against `Path2D` objects in viewBox units, walk
 
 Wheel handling is bound directly to the element rather than through React's synthetic system, because `preventDefault()` requires a non-passive listener and React cannot guarantee that.
 
-Below the `lg` breakpoint the stage is `position: sticky` at the top of the page, so the canvas stays in view while the inspector scrolls. Its height is `44svh` rather than `dvh`: the small-viewport unit does not change when the iOS toolbar collapses, so the canvas does not resize mid-scroll.
+### Phone layout
+
+Below the `lg` breakpoint (1024 px) the page is one scrolling column. In `App.tsx` the `Stage` and the `InspectorTabs` strip share one wrapper, marked `data-sticky-stage`, that is `position: sticky` at the top, so the canvas, its tool strip and the tabs stay in view while the open panel scrolls beneath. On desktop the wrapper is `lg:contents` and dissolves, so the stage fills its column as before. The canvas box is `44svh` tall rather than `dvh`: the small-viewport unit does not change when the iOS toolbar collapses, so the canvas does not resize mid-scroll. The kaomoji hint under the art is truncated to one line on phones for the same reason — a wrapping line would grow the sticky block.
+
+The tool strip (Undo, Redo, Add photos, Remix) is a flex row under the canvas inside `Stage.tsx`, beside the `Buddy` hint, rather than absolutely positioned over the art.
+
+The tab state (`'shape' | 'regions' | 'look' | 'export'`) lives in `App` and is passed to both `InspectorTabs` and `Inspector`. `Inspector` reads the breakpoint with `useSyncExternalStore` over `matchMedia('(min-width: 1024px)')`:
+
+| Width | What `Inspector` renders |
+|---|---|
+| Desktop | Every section stacked: Template/Text → Output → Regions → Composition → About |
+| Phone | Four `role="tabpanel"` shells; only the active one has children. Inactive shells stay in the DOM, `hidden` and empty, so every tab's `aria-controls` resolves without rendering its controls |
+
+The tabs follow the APG tabs pattern: `role="tablist"` with roving `tabIndex`, and Arrow Left/Right, `Home` and `End` move and select. The active tab is marked by `.tab[aria-selected='true']` in `index.css`.
+
+Selecting a region opens the Regions tab. `App` subscribes to the store directly (`useStore.subscribe`) and calls `setTab('regions')` whenever `selectedId` changes to a new value, so selection itself never re-renders `App`. `RegionList` then brings the selected card (`data-region-card`, looked up with `CSS.escape` because ids come from user files) into view. On desktop that is `scrollIntoView({ block: 'nearest' })`. On a phone `scrollIntoView` would park the card under the sticky stage, so it measures the `data-sticky-stage` wrapper, does nothing if the card is already visible below it, and otherwise scrolls the window by the difference, smoothly unless reduced motion is set.
+
+### Header links
+
+The header's zucity.org and social links (X, Instagram, Substack, in that order) use `.navlink`, a small class in `index.css` for plain text and icon links with a 44 px target. They used `.btn` before, and because `.btn` is unlayered CSS the Tailwind utilities meant to unbox it were ignored, so they rendered as boxed grey buttons.
 
 ### Render caching
 
@@ -237,7 +256,9 @@ The draw effect in `Stage.tsx` deliberately has no dependency array and runs on 
 
 ### Keeping drags cheap in React
 
-A drag rewrites `composition.fills` every frame, so what subscribes to it decides how much re-renders. `RegionCard` is memoised, and untouched regions keep their fill object's identity, so only the dragged card re-renders. `RegionList` owns the `fills` subscription instead of the whole `Inspector`; `Controls` subscribes to each composition field separately; `Toolbar` reads the store at click time instead of subscribing. Below-the-fold inspector sections carry `.cv-auto` (`content-visibility: auto`), which lets the browser skip their layout and paint on first load.
+A drag rewrites `composition.fills` every frame, so what subscribes to it decides how much re-renders. `RegionCard` is memoised, and untouched regions keep their fill object's identity, so only the dragged card re-renders. `RegionList` owns the `fills` subscription instead of the whole `Inspector`; `Controls` subscribes to each composition field separately; `Toolbar` reads the store at click time instead of subscribing.
+
+Below-the-fold inspector sections used to carry `content-visibility: auto` with an intrinsic-size estimate (480 px). It was removed: when a section's real height replaced the estimate, the sections below jumped, pushing About down and adding a 0.06 desktop layout shift. It is also no longer needed, since a phone renders only the active tab and the desktop inspector mounts in a time-sliced transition (see "First load and caching"). The lesson for this app: do not render a hidden panel, rather than rendering it and asking the browser to skip it.
 
 ### Accessibility notes
 
@@ -249,7 +270,27 @@ The canvas is `role="img"` with a label naming the template and its region count
 
 The first visit is dressed, not blank. `useStarterLook()` in `App.tsx` calls `loadStarterAssets()`, which shuffles the five bundled textures in `public/textures/`, fetches **only the chosen pair** in parallel, and dresses the default yin-yang as soon as those two arrive. The other three stream in behind and join the Remix deck. Starters go through the same ingest pipeline as an upload, so they behave identically downstream. The dressing applies its fills with `updateFill`, so it records **no undo entry**, and it only touches a pristine session (no history, no assets, every fill still a flat colour). A failed fetch degrades quietly to flat colour.
 
+### Stage first, inspector in a transition
+
+The stage paints before the controls. `App` holds a `ready` flag that starts `false`; while it is false, `Inspector` renders only its `<aside>` shell, which reserves the column on desktop and `min-h-[50svh]` on a phone, so nothing shifts when the controls arrive. Right after mount, `App` flips `ready` inside `startTransition`, and React renders the inspector as interruptible, time-sliced work instead of one long boot task that blocks the first frame.
+
+The flip is scheduled twice: by `requestAnimationFrame`, and by a 120 ms `setTimeout` as a backstop. The timeout exists because **a background tab never fires `requestAnimationFrame`**. A page opened in a background tab would otherwise sit with an empty inspector until the user switched to it. Whichever fires first sets `ready`; the second is a no-op. Both are cancelled in the effect cleanup, which is safe under `StrictMode`: the re-run schedules again.
+
+On a phone only the active tab panel renders (see "Phone layout" above), so the first paint builds one panel's controls, not four.
+
+### Text code loads on demand
+
+The typesetter is not in the main bundle. `TextPanel` is a `React.lazy` import in `Inspector.tsx`, rendered under `Suspense` with a "loading the typesetter…" fallback, and the press on **Text** in the template picker `await import('../lib/textTemplate')` before it typesets. A chunk that fails to load (offline, or a stale tab after a deploy) resolves to a short message saying so and that the canvas still shows the last typeset text, rather than an unhandled rejection that would take down the app. `textTemplate.ts` in turn dynamically imports opentype.js. Together this took the main bundle from 89.1 to 85.5 kB gzipped.
+
+### Images decode off the main thread
+
+`loadImage()` in `lib/imageCache.ts` sets `img.src` and awaits `img.decode()` before caching the element. With a plain `onload`, the first `drawImage` of each texture decoded synchronously on the main thread, inside the first-paint long task. A failed decode still rejects with `Could not decode <name>`, and in-flight loads are still shared per asset id.
+
+### Fonts
+
 The UI font, Space Mono, is preloaded from `index.html` as `woff2`, with the `.ttf` as a CSS fallback. `@font-face` uses absolute `/fonts/…` URLs: a relative `url()` resolves against the built stylesheet in `/assets/`, which is how the font 404'd in production before. The typesetter's built-in fonts are fetched from JavaScript and use relative `./fonts/…` URLs, which resolve against the page and are correct.
+
+### Caching
 
 `vercel.json` sets cache headers and nothing else:
 
@@ -258,6 +299,7 @@ The UI font, Space Mono, is preloaded from `index.html` as `woff2`, with the `.t
 | `/assets/*` | `public, max-age=31536000, immutable` | Vite fingerprints these; a new build means a new name |
 | `/fonts/*`, `/textures/*` | `public, max-age=2592000, stale-while-revalidate=86400` | Stable names, so 30 days rather than forever |
 | Icons, `manifest.webmanifest` | `public, max-age=86400` | Change rarely, but must be able to change |
+| `og.png`, `robots.txt`, `sitemap.xml`, the IndexNow key file (`[0-9a-f]{32}.txt`) | `public, max-age=86400` | Same: stable names that must be able to change. See [seo.md](seo.md) |
 | `/` (`index.html`) | No rule; Vercel's default revalidates on each request | It names the current hashed assets |
 
 Only fingerprinted files may be immutable. There is a PWA manifest and icons for installability but no service worker, on purpose: installing should not bring a stale-cache risk.

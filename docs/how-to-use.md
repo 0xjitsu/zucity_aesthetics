@@ -4,7 +4,24 @@ MaskLab fills the separate regions of a shape with separate textures. A flag wit
 
 Everything below happens in your browser. **Nothing is uploaded anywhere** — there is no account, no server, and no network request carrying your images or fonts. Close the tab and it is gone, which is also why you should export a JSON if you want a look back later.
 
-The screen is two halves: the **canvas** on the left (the stage), and the **inspector** on the right. On a phone the inspector sits below the canvas, and the canvas stays pinned at the top while you scroll the controls, so every change shows live. The inspector runs top to bottom: Template → Text (when you are using text) → Output → Regions → Composition.
+The screen is two halves: the **canvas** on the left (the stage), and the **inspector** on the right. On a desktop the inspector runs top to bottom: Template → Text (when you are using text) → Output → Regions → Composition → About.
+
+Under the canvas sits a strip with a one-line hint on the left and the tools on the right: **Undo**, **Redo**, **Add photos** (**+**) and, once any image is loaded, **Remix**. The tools sit under the artwork, never on top of it.
+
+### On a phone
+
+Below the desktop breakpoint (1024 px wide) the inspector becomes four tabs directly under the canvas. The canvas, the tool strip and the tabs stay pinned at the top while the open tab's controls scroll beneath them, so every change shows live.
+
+| Tab | What is in it |
+|-----|---------------|
+| **Shape** | Template picker, Custom SVG upload, and the Text controls when you are using text |
+| **Regions** | One card per region, in paint order |
+| **Look** | The Composition controls: background, rotation, grain, ring, export size |
+| **Export** | The Output buttons (export, import, undo, redo, remix, reset) and About |
+
+Tap a region on the canvas and the **Regions** tab opens with that region's card scrolled into view. Selecting by keyboard (`1`–`9`, `[` `]`) does the same. With a keyboard, the arrow keys, `Home` and `End` move between tabs.
+
+The header links to zucity.org, then ZuCity on X, Instagram and Substack, each in a new tab so the canvas is never lost.
 
 The canvas opens already dressed in two of the bundled ZuCity textures, a different pair on each visit. Treat it as a starting point: undo will not step back to a blank shape.
 
@@ -16,11 +33,11 @@ You can install MaskLab to your home screen from your browser's share or install
 
 The fastest way in, and the one built for a phone.
 
-1. Press **Add photos** in the bottom-right corner of the canvas (on a phone it is the **+** button). Pick one or more images.
+1. Press **Add photos** in the strip under the canvas (on a phone it is the **+** button). Pick one or more images.
 2. They are dealt into the shape straight away, one texture per region, each placed a little differently. A notice tells you how many arrived.
 3. Press **Remix** (the circular-arrows button beside it) to deal again. Every press is a new arrangement: your photos and the starter textures are shuffled so each gets a turn before any repeats.
 4. Went one too far? Press **Undo** (the left-curling arrow). **Redo** (the right-curling arrow) steps forward again.
-5. When you like it, scroll to **Output** and press **Export PNG**.
+5. When you like it, go to **Output** (the **Export** tab on a phone) and press **Export PNG**.
 
 Each deal is one undo step, so you can tap through a run of remixes and walk back to the one you liked.
 
@@ -136,7 +153,7 @@ Directly on the canvas:
 | Two-finger pinch | Zooms it, on a touchscreen |
 | Two-finger twist | Spins it, on a touchscreen — pinch and twist work together in one gesture |
 
-The hint under the canvas switches between the touch and mouse versions of these depending on your device.
+The hint under the canvas switches between the touch and mouse versions of these depending on your device. On a phone it is cut to one line so the pinned canvas never grows.
 
 From the card: **Colour** (used when there is no image), **Zoom**, **Spin**, **X** and **Y** offset, **Flip X** / **Flip Y**, **Opacity**, and **Blend** — the full set of blend modes, so a texture can multiply or screen against what is behind it.
 
@@ -155,7 +172,7 @@ On a desktop, a one-line reminder of these shortcuts sits at the bottom of **Out
 
 ### Undo and redo
 
-Undo and Redo are buttons in two places: the bottom-right corner of the canvas (always in reach on a phone) and the **Output** section. They grey out when there is nothing to undo or redo.
+Undo and Redo are buttons in two places: the strip under the canvas (always in reach on a phone) and the **Output** section. They grey out when there is nothing to undo or redo.
 
 One undo step is one thing you did, not one event the browser saw:
 
@@ -177,13 +194,13 @@ The **Composition** section applies to the piece as a whole:
 - **Ring width** / **Ring colour** — a circular stroke hugging the artwork. Zero is off.
 - **Export size** — 600 to 4096 px, square.
 
-**Remix** (in **Output**, and on the canvas once any image is loaded) deals the loaded textures across every region with fresh placement; with no images loaded it shuffles colours only. **Reset** returns the composition to its defaults. Both are undoable.
+**Remix** (in **Output**, and in the strip under the canvas once any image is loaded) deals the loaded textures across every region with fresh placement; with no images loaded it shuffles colours only. **Reset** returns the composition to its defaults. Both are undoable.
 
 ---
 
 ## Export
 
-Four buttons under **Output**. Which one you want depends on where the file is going:
+Four buttons under **Output** (the **Export** tab on a phone). Which one you want depends on where the file is going:
 
 | Use | Button | Why |
 |-----|--------|-----|

@@ -13,7 +13,7 @@ Fill each region of a vector shape — or each letter of a word you type — wit
 [![React 19](https://img.shields.io/badge/React_19-1f1f26?style=flat-square&logo=react&logoColor=61dafb)](https://react.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ff3b14?style=flat-square)](#contributing)
 
-[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Architecture](docs/architecture.md) · [For Agents](AGENTS.md) · [Changelog](CHANGELOG.md) · [Live app](https://zucity-aesthetics.vercel.app)
+[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Architecture](docs/architecture.md) · [Search & AI visibility](docs/seo.md) · [For Agents](AGENTS.md) · [Changelog](CHANGELOG.md) · [Live app](https://zucity-aesthetics.vercel.app)
 
 </div>
 
@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-The first canvas arrives already dressed in two of the bundled ZuCity textures. Press **Add photos** on the canvas to deal your own images in, **Remix** to deal again, and export. Or drop an image onto a region, or click a region and use the inspector. Full walkthrough: [docs/how-to-use.md](docs/how-to-use.md).
+The first canvas arrives already dressed in two of the bundled ZuCity textures. Press **Add photos** under the canvas to deal your own images in, **Remix** to deal again, and export. Or drop an image onto a region, or click a region and use the inspector. Full walkthrough: [docs/how-to-use.md](docs/how-to-use.md).
 
 | Gesture | Effect |
 |---------|--------|
@@ -50,8 +50,8 @@ The first canvas arrives already dressed in two of the bundled ZuCity textures. 
 | Scroll | Zooms the selected texture |
 | Shift-scroll | Spins the selected texture |
 | Two-finger pinch and twist | Zooms and spins the selected texture (touch) |
-| **Add photos** on the canvas | Picks images and deals them into the shape |
-| **Remix** on the canvas | Deals the loaded textures into the regions afresh |
+| **Add photos** under the canvas | Picks images and deals them into the shape |
+| **Remix** under the canvas | Deals the loaded textures into the regions afresh |
 | Drop a file on a region card | Assigns that texture to that region |
 | Drop a file on the canvas | Fills the region under the cursor |
 | Paste (`⌘V` / `Ctrl+V`) | Ingests an image from the clipboard |
@@ -65,7 +65,7 @@ The first canvas arrives already dressed in two of the bundled ZuCity textures. 
 | `⌘Z` / `Ctrl+Z` | Undo (30 steps) |
 | `⇧⌘Z` / `Ctrl+Shift+Z` / `Ctrl+Y` | Redo |
 
-Shortcuts go inert while a form control has focus, so typing into the text box never moves the selection. Undo and Redo are also buttons on the canvas and in **Output**, for phones.
+Shortcuts go inert while a form control has focus, so typing into the text box never moves the selection. Undo and Redo are also buttons in the strip under the canvas and in **Output**, for phones.
 
 ## What's Inside
 
@@ -78,8 +78,10 @@ Shortcuts go inert while a form control has focus, so typing into the text box n
 - **Starter textures** — five bundled ZuCity textures; each visit opens on a different pair, and the rest join the Remix deck.
 - **Composition controls** — background colour, global rotation, film grain, ring stroke, export size, and transparent-background export.
 - **30-step undo and redo** — one entry per gesture, not per input event. A click that only selects records nothing.
-- **Installable, phone-first** — a PWA manifest and icons for the home screen, and on a phone the canvas stays pinned while the controls scroll beneath it.
-- **Made for [ZuCity](https://zucity.org)** — the header links to zucity.org, X, Substack and Instagram, each in a new tab so the canvas is never lost.
+- **Installable, phone-first** — a PWA manifest and icons for the home screen. On a phone the controls become four tabs under the canvas (Shape, Regions, Look, Export), the canvas and tabs stay pinned while the open tab scrolls, and tapping a region on the canvas opens Regions at its card.
+- **Tools under the art** — Undo, Redo, Add photos and Remix sit in a strip under the canvas, never on top of the artwork.
+- **Fast first paint** — the canvas draws first and the controls follow; the text typesetter loads only when you press Text.
+- **Made for [ZuCity](https://zucity.org)** — the header links to zucity.org, then X, Instagram and Substack, each in a new tab so the canvas is never lost. An About section says the same, and the page is set up for search and AI assistants ([docs/seo.md](docs/seo.md)).
 
 ## How It Works
 
@@ -145,10 +147,13 @@ export const myShape: Template = {
 ## Project Structure
 
 ```
-index.html                Meta, PWA links, font preloads, JSON-LD
+index.html                Meta, Open Graph, PWA links, font preloads, JSON-LD,
+                          crawlable fallback HTML in #root
 vercel.json               Cache-Control headers
+scripts/indexnow.mjs      IndexNow ping, run after each production deploy
 src/
-  App.tsx                 Layout shell, ZuCity links, first-visit starter look
+  App.tsx                 Layout shell, ZuCity links, phone tabs state,
+                          first-visit starter look
   types.ts                Data model: Region, Template, Fill, Asset,
                           Composition, TextSpec, FontAsset, MaskLabFile
   opentype-js.d.ts        Ambient types for opentype.js v2
@@ -165,13 +170,16 @@ src/
     textTemplate.ts       Typed text becomes a Template (opentype.js)
     imageCache.ts         Decode-once asset cache
   templates/              One file per built-in shape, plus the registry
-  components/             Stage (canvas, hit-testing, gestures, on-canvas buttons),
-                          Inspector, TextPanel, RegionCard, Controls, Toolbar,
-                          Toasts, Ticker, Buddy
+  components/             Stage (canvas, hit-testing, gestures, tool strip),
+                          Inspector (+ phone tabs), TextPanel (lazy), RegionCard,
+                          Controls, Toolbar, About, Toasts, Ticker, Buddy
   hooks/useKeyboard.ts    Global shortcuts
 public/fonts/             Bundled typefaces + LICENSE.txt (SIL OFL 1.1)
 public/textures/          Five starter textures (WebP)
 public/manifest.webmanifest  PWA manifest (+ icons alongside)
+public/og.png             1200 × 630 social preview image
+public/robots.txt, sitemap.xml  Crawler rules and the one-URL sitemap
+public/<32 hex>.txt       IndexNow key file; keep it
 ```
 
 <details>
@@ -209,7 +217,7 @@ Any static host. For Vercel:
 npx vercel --prod
 ```
 
-Framework preset: Vite. Build command `npm run build`, output directory `dist`. `vercel.json` sets cache headers only: hashed `/assets/*` immutable for a year, fonts and textures 30 days. Live at [zucity-aesthetics.vercel.app](https://zucity-aesthetics.vercel.app).
+Framework preset: Vite. Build command `npm run build`, output directory `dist`. `vercel.json` sets cache headers only: hashed `/assets/*` immutable for a year, fonts and textures 30 days, icons, manifest, `og.png`, `robots.txt`, `sitemap.xml` and the IndexNow key one day. After each production deploy, run `node scripts/indexnow.mjs` so Bing and other IndexNow engines pick up the change ([docs/seo.md](docs/seo.md)). Live at [zucity-aesthetics.vercel.app](https://zucity-aesthetics.vercel.app).
 
 ## Tech Stack
 
@@ -257,6 +265,6 @@ The OFL permits redistribution, bundling, and embedding, including in a commerci
 
 **One shape. Many textures.**
 
-[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Report a Bug](https://github.com/0xjitsu/zucity_aesthetics/issues/new) · [Request a Feature](https://github.com/0xjitsu/zucity_aesthetics/issues/new)
+[Quick Start](#quick-start) · [How to Use](docs/how-to-use.md) · [Search & AI visibility](docs/seo.md) · [Report a Bug](https://github.com/0xjitsu/zucity_aesthetics/issues/new) · [Request a Feature](https://github.com/0xjitsu/zucity_aesthetics/issues/new)
 
 </div>
