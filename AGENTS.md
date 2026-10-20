@@ -211,3 +211,9 @@ Left recorded because the reasoning is reusable, and because each was found by m
 - **WOFF2 fonts are rejected on purpose.** opentype.js v2 needs an external Brotli decompressor that this app does not ship, so `fontFromFile()` refuses `.woff2` with a message telling the user to convert. Do not "fix" this by adding the extension to `FONT_MIME`; it would fail later and less clearly.
 - **Text is capped at 500 glyphs** (`MAX_GLYPHS`). Every region is a separate clip-and-draw per frame, so the cap is a real performance boundary, not a guess.
 - **opentype.js is dynamically imported** in `textTemplate.ts` to keep ~250 kB out of the initial bundle. Keep it behind the dynamic import; a static import at the top of any eagerly-loaded module undoes the split.
+
+## Secrets (every agent: Claude, Codex, Grok, Cursor, Gemini)
+
+- Every token, secret, password or API key is saved to **1Password** first — Berna's main password manager. Vercel/hosting env vars, macOS Keychain and CI secrets are mirrors only.
+- Never print, log, commit or paste a secret value, and never read one back from 1Password, Keychain, `.env*` files or a hosting dashboard. Listing 1Password item titles or field labels is fine when asked.
+- When a step creates or rotates a secret, give Berna ONE command that writes it to 1Password without echoing it (`op item create`, category `PASSWORD`, a single `password` field, title `<Project> – <what> (<env>)`) and then stores the mirror (for example `… | vercel env add NAME production --sensitive`).
